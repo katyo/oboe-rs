@@ -8,7 +8,7 @@ set(oboe-ext_sources
 
 add_library (oboe-ext ${oboe-ext_sources})
 
-set (OBOE_DIR ../oboe)
+#set (OBOE_DIR ../oboe)
 
 target_include_directories(oboe-ext
     PRIVATE src

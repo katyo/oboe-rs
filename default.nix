@@ -16,6 +16,7 @@ in stdenv.mkDerivation rec {
     pkgconfig
     zlib
     ncurses5
+    openssl
     cmake
   ];
 }

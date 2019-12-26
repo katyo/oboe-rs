@@ -9,8 +9,11 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-include = ["lib/lib*.a", "src/bindings_*.rs"]
-exclude = ["Makefile"]
+include = ["/lib/lib*.a", "/src/*.rs", "/oboe-ext", "/README.md"]
+
+[build-dependencies.git2]
+version = "0.11"
+optional = true
 
 [build-dependencies.cmake]
 version = "0.1"
@@ -21,6 +24,6 @@ version = "0.52"
 optional = true
 
 [features]
-generate-bindings = ["bindgen"]
-compile-library = ["cmake"]
+generate-bindings = ["bindgen", "git2"]
+compile-library = ["cmake", "git2"]
 rustdoc = []
