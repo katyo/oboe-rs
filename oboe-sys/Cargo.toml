@@ -1,0 +1,26 @@
+[package]
+name = "oboe-sys"
+version = "0.1.0"
+description = "Raw bindings for oboe an android library for low latency audio IO"
+authors = ["K. <kayo@illumium.org>"]
+license = "Apache-2.0"
+repository = "https://github.com/katyo/oboe-rs"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+include = ["lib/lib*.a", "src/bindings_*.rs"]
+exclude = ["Makefile"]
+
+[build-dependencies.cmake]
+version = "0.1"
+optional = true
+
+[build-dependencies.bindgen]
+version = "0.52"
+optional = true
+
+[features]
+generate-bindings = ["bindgen"]
+compile-library = ["cmake"]
+rustdoc = []
