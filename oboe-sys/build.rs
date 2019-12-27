@@ -140,7 +140,6 @@ fn generate_bindings(oboe_src: &Path, out_file: &Path) {
 
     let oboe_src_include = oboe_src.join("include");
     let oboe_ext_include = Path::new("oboe-ext").join("include");
-    let wrapper_header = oboe_ext_include.join("wrapper.h");
 
     let bindings = bindgen::Builder::default()
         .detect_include_paths(true)
@@ -153,7 +152,7 @@ fn generate_bindings(oboe_src: &Path, out_file: &Path) {
             format!("-I{}", oboe_ext_include.display()),
             format!("-I{}", oboe_src_include.display()),
         ])
-        .header(wrapper_header.display().to_string())
+        .header(oboe_ext_include.join("oboe").join("OboeExt.h").display().to_string())
         .opaque_type("std::*")
         .whitelist_type("oboe::ChannelCount")
         .whitelist_type("oboe::AudioStreamBase")
