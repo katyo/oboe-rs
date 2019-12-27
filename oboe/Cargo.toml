@@ -1,0 +1,22 @@
+[package]
+name = "oboe"
+version = "0.1.0"
+description = "Safe interface for oboe an android library for low latency audio IO"
+authors = ["K. <kayo@illumium.org>"]
+license = "Apache-2.0"
+repository = "https://github.com/katyo/oboe-rs"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num-traits = "0.2"
+num-derive = "0.3"
+
+[dependencies.oboe-sys]
+path = "../oboe-sys"
+
+[features]
+generate-bindings = ["oboe-sys/generate-bindings"]
+compile-library = ["oboe-sys/compile-library"]
+rustdoc = ["oboe-sys/rustdoc"]

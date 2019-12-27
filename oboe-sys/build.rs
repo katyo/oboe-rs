@@ -161,6 +161,10 @@ fn generate_bindings(oboe_src: &Path, out_file: &Path) {
         .whitelist_type("oboe::LatencyTuner")
         .whitelist_type("oboe::AudioStreamCallbackWrapper")
         .whitelist_type("oboe::StabilizedCallback")
+        .whitelist_type("oboe::DefaultStreamValues")
+        .whitelist_function("oboe::convertToTextFromResult")
+	.whitelist_function("oboe::AudioStream_.+")
+        .whitelist_function("oboe::AudioStreamBuilder_.+")
         .generate()
         .expect("Unable to generate bindings");
 

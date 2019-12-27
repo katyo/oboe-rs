@@ -1,5 +1,4 @@
-#include "oboe/Oboe.h"
-#include "oboe/AudioStreamCallbackWrapper.h"
+#include "oboe/OboeExt.h"
 
 namespace oboe {
   AudioStreamCallbackWrapper::

@@ -3,7 +3,10 @@ cmake_minimum_required(VERSION 3.4.1)
 project(oboe-ext)
 
 set(oboe-ext_sources
+    src/AudioStreamWrapper.cpp
+    src/AudioStreamBuilderWrapper.cpp
     src/AudioStreamCallbackWrapper.cpp
+    src/UtilitiesWrapper.cpp
     )
 
 add_library (oboe-ext ${oboe-ext_sources})

@@ -1,5 +1,6 @@
 [workspace]
 members = [
   "oboe-sys",
+  "oboe",
   "oboe-demo",
 ]
