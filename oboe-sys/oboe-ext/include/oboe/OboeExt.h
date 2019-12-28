@@ -4,10 +4,9 @@
 #include "oboe/Oboe.h"
 
 namespace oboe {
-  const char *convertAudioStreamToText(AudioStream *oboeStream);
+  void AudioStreamBuilder_new(AudioStreamBuilder *builder);
 
-  void AudioStreamBuilder_Initialize(AudioStreamBuilder *builder);
-
+  void AudioStream_delete(AudioStream *oboeStream);
   Result AudioStream_open(AudioStream *oboeStream);
   Result AudioStream_requestStart(AudioStream *oboeStream);
   Result AudioStream_requestPause(AudioStream *oboeStream);
@@ -28,6 +27,14 @@ namespace oboe {
   ResultWithValue<double>
   AudioStream_calculateLatencyMillis(AudioStream *oboeStream);
   AudioApi AudioStream_getAudioApi(const AudioStream *oboeStream);
+  ResultWithValue<int32_t> AudioStream_read(AudioStream *oboeStream,
+                                            void* buffer,
+                                            int32_t numFrames,
+                                            int64_t timeoutNanoseconds);
+  ResultWithValue<int32_t> AudioStream_write(AudioStream *oboeStream,
+                                             const void* buffer,
+                                             int32_t numFrames,
+                                             int64_t timeoutNanoseconds);
 
   typedef DataCallbackResult (*AudioReadyHandler)(void *context,
                                                   AudioStream *oboeStream,
@@ -40,10 +47,11 @@ namespace oboe {
 
   class AudioStreamCallbackWrapper: AudioStreamCallback {
   public:
-    AudioStreamCallbackWrapper(void *context,
-                               AudioReadyHandler audio_ready,
-                               ErrorCloseHandler before_close,
-                               ErrorCloseHandler after_close);
+    AudioStreamCallbackWrapper(const AudioReadyHandler audio_ready,
+                               const ErrorCloseHandler before_close,
+                               const ErrorCloseHandler after_close);
+
+    void setContext(void *context);
 
     DataCallbackResult onAudioReady(AudioStream *oboeStream,
                                     void *audioData,
@@ -57,9 +65,9 @@ namespace oboe {
 
   private:
     void *_context;
-    AudioReadyHandler _audio_ready;
-    ErrorCloseHandler _before_close;
-    ErrorCloseHandler _after_close;
+    const AudioReadyHandler _audio_ready;
+    const ErrorCloseHandler _before_close;
+    const ErrorCloseHandler _after_close;
   };
 }
 

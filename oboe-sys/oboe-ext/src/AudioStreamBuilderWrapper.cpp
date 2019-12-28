@@ -1,7 +1,7 @@
 #include "oboe/OboeExt.h"
 
 namespace oboe {
-  void AudioStreamBuilder_Initialize(AudioStreamBuilder *builder) {
+  void AudioStreamBuilder_new(AudioStreamBuilder *builder) {
     new (builder) AudioStreamBuilder();
   }
 }

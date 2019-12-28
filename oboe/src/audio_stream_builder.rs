@@ -1,15 +1,14 @@
 use std::{
+    marker::PhantomData,
     mem::MaybeUninit,
+    fmt,
 };
 use num_traits::{FromPrimitive};
 use oboe_sys as ffi;
 
 use super::{
-    ChannelCount,
     Result,
     AudioApi,
-    Direction,
-    AudioFormat,
     SharingMode,
     PerformanceMode,
     Usage,
@@ -18,18 +17,42 @@ use super::{
     SessionId,
     SampleRateConversionQuality,
     RawAudioStreamBase,
+
+    Unspecified,
+    IsDirection, Input, Output,
+    IsFrameType,
+    IsFormat,
+    IsChannelCount, Mono, Stereo,
+
+    AudioStreamCallback,
+    AudioStreamInputCallback,
+    AudioStreamOutputCallback,
+
+    AudioStreamCallbackWrapper,
+
+    AudioStreamBlocked,
+    AudioStreamWithCallback,
+
+    wrap_status,
+    audio_stream_base_fmt,
 };
 
 /**
  * Factory for an audio stream.
  */
-#[derive(Debug)]
 #[repr(transparent)]
-pub struct AudioStreamBuilder {
+pub struct AudioStreamBuilder<D, C, T> {
     raw: ffi::oboe_AudioStreamBuilder,
+    _phantom: PhantomData<(D, C, T)>,
 }
 
-impl RawAudioStreamBase for AudioStreamBuilder {
+impl<D, C, T> fmt::Debug for AudioStreamBuilder<D, C, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        audio_stream_base_fmt(self, f)
+    }
+}
+
+impl<D, C, T> RawAudioStreamBase for AudioStreamBuilder<D, C, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
         &self.raw._base
     }
@@ -39,7 +62,7 @@ impl RawAudioStreamBase for AudioStreamBuilder {
     }
 }
 
-impl AudioStreamBuilder {
+impl AudioStreamBuilder<Output, Unspecified, Unspecified> {
     /**
      * Create new audio stream builder
      */
@@ -48,21 +71,32 @@ impl AudioStreamBuilder {
 
         Self {
             raw: unsafe {
-                ffi::oboe_AudioStreamBuilder_Initialize(raw.as_mut_ptr());
+                ffi::oboe_AudioStreamBuilder_new(raw.as_mut_ptr());
                 raw.assume_init()
-            }
+            },
+            _phantom: PhantomData,
         }
     }
+}
 
+impl<D, C, T> AudioStreamBuilder<D, C, T> {
     /**
      * Request a specific number of channels.
      *
      * Default is ChannelCount::Unspecified. If the value is unspecified then
      * the application should query for the actual value after the stream is opened.
      */
-    pub fn set_channel_count(&mut self, channel_count: ChannelCount) -> &mut Self {
-        self.raw._base.mChannelCount = channel_count as i32;
-        self
+    pub fn set_channel_count<X: IsChannelCount>(mut self) -> AudioStreamBuilder<D, X, T> {
+        self.raw._base.mChannelCount = X::CHANNEL_COUNT as i32;
+        AudioStreamBuilder { raw: self.raw, _phantom: PhantomData }
+    }
+
+    pub fn set_mono(self) -> AudioStreamBuilder<D, Mono, T> {
+        self.set_channel_count::<Mono>()
+    }
+
+    pub fn set_stereo(self) -> AudioStreamBuilder<D, Stereo, T> {
+        self.set_channel_count::<Stereo>()
     }
 
     /**
@@ -70,9 +104,17 @@ impl AudioStreamBuilder {
      *
      * @param direction Direction::Output or Direction::Input
      */
-    pub fn set_direction(&mut self, direction: Direction) -> &mut Self {
-        self.raw._base.mDirection = direction as i32;
-        self
+    pub fn set_direction<X: IsDirection>(mut self) -> AudioStreamBuilder<X, C, T> {
+        self.raw._base.mDirection = X::DIRECTION as i32;
+        AudioStreamBuilder { raw: self.raw, _phantom: PhantomData }
+    }
+
+    pub fn set_input(self) -> AudioStreamBuilder<Input, C, T> {
+        self.set_direction::<Input>()
+    }
+
+    pub fn set_output(self) -> AudioStreamBuilder<Output, C, T> {
+        self.set_direction::<Output>()
     }
 
     /**
@@ -116,9 +158,17 @@ impl AudioStreamBuilder {
      * Default is Format::Unspecified. If the value is unspecified then
      * the application should query for the actual value after the stream is opened.
      */
-    pub fn set_format(&mut self, format: AudioFormat) -> &mut Self {
-        self.raw._base.mFormat = format as i32;
-        self
+    pub fn set_format<X: IsFormat>(mut self) -> AudioStreamBuilder<D, C, X> {
+        self.raw._base.mFormat = X::FORMAT as i32;
+        AudioStreamBuilder { raw: self.raw, _phantom: PhantomData }
+    }
+
+    pub fn set_i16(self) -> AudioStreamBuilder<D, C, i16> {
+        self.set_format::<i16>()
+    }
+
+    pub fn set_f32(self) -> AudioStreamBuilder<D, C, f32> {
+        self.set_format::<f32>()
     }
 
     /**
@@ -204,6 +254,14 @@ impl AudioStreamBuilder {
     pub fn set_sharing_mode(&mut self, sharing_mode: SharingMode) -> &mut Self {
         self.raw._base.mSharingMode = sharing_mode as i32;
         self
+    }
+
+    pub fn set_shared(&mut self) -> &mut Self {
+        self.set_sharing_mode(SharingMode::Shared)
+    }
+
+    pub fn set_exclusive(&mut self) -> &mut Self {
+        self.set_sharing_mode(SharingMode::Exclusive)
     }
 
     /**
@@ -327,32 +385,6 @@ impl AudioStreamBuilder {
     }
 
     /**
-     * Specifies an object to handle data or error related callbacks from the underlying API.
-     *
-     * <strong>Important: See AudioStreamCallback for restrictions on what may be called
-     * from the callback methods.</strong>
-     *
-     * When an error callback occurs, the associated stream will be stopped and closed in a separate thread.
-     *
-     * A note on why the streamCallback parameter is a raw pointer rather than a smart pointer:
-     *
-     * The caller should retain ownership of the object streamCallback points to. At first glance weak_ptr may seem like
-     * a good candidate for streamCallback as this implies temporary ownership. However, a weak_ptr can only be created
-     * from a shared_ptr. A shared_ptr incurs some performance overhead. The callback object is likely to be accessed
-     * every few milliseconds when the stream requires new data so this overhead is something we want to avoid.
-     *
-     * This leaves a raw pointer as the logical type choice. The only caveat being that the caller must not destroy
-     * the callback before the stream has been closed.
-     *
-     * @param streamCallback
-     * @return pointer to the builder so calls can be chained
-     */
-    /*pub fn set_callback(&mut self, stream_callback: AudioStreamCallback) -> &mut Self {
-        self.raw._base.mStreamCallback = streamCallback;
-        self
-    }*/
-
-    /**
      * If true then Oboe might convert channel counts to achieve optimal results.
      * On some versions of Android for example, stereo streams could not use a FAST track.
      * So a mono stream might be used instead and duplicated to two channels.
@@ -401,8 +433,10 @@ impl AudioStreamBuilder {
         (self.raw.mAudioApi == (AudioApi::AAudio as i32) && Self::is_aaudio_supported()) ||
             (self.raw.mAudioApi == (AudioApi::Unspecified as i32) && Self::is_aaudio_recommended())
     }
+}
 
-    /*
+impl<D: IsDirection, C: IsChannelCount, T: IsFormat> AudioStreamBuilder<D, C, T> {
+    /**
      * Create and open a stream object based on the current settings.
      *
      * The caller owns the pointer to the AudioStream object.
@@ -410,18 +444,155 @@ impl AudioStreamBuilder {
      * @param stream pointer to a variable to receive the stream address
      * @return OBOE_OK if successful or a negative error code
      */
-    /*pub fn openStream(mut self) -> Result<AudioStream> {
+    pub fn open_stream(mut self) -> Result<AudioStreamBlocked<D, (T, C)>> {
+        let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
 
-    }*/
+        wrap_status(unsafe {
+            ffi::oboe_AudioStreamBuilder_openStream(
+                &mut self.raw,
+                stream.as_mut_ptr(),
+            )
+        }).map(|_| AudioStreamBlocked::wrap_raw(
+            unsafe { stream.assume_init() },
+        ))
+    }
+}
 
-    /*
-     * Create and open a ManagedStream object based on the current builder state.
+impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Input, C, T> {
+    /**
+     * Specifies an object to handle data or error related callbacks from the underlying API.
      *
-     * The caller must create a unique ptr, and pass by reference so it can be
-     * modified to point to an opened stream. The caller owns the unique ptr,
-     * and it will be automatically closed and deleted when going out of scope.
-     * @param stream Reference to the ManagedStream (uniqueptr) used to keep track of stream
-     * @return OBOE_OK if successful or a negative error code.
+     * <strong>Important: See AudioStreamCallback for restrictions on what may be called
+     * from the callback methods.</strong>
+     *
+     * When an error callback occurs, the associated stream will be stopped and closed in a separate thread.
+     *
+     * A note on why the streamCallback parameter is a raw pointer rather than a smart pointer:
+     *
+     * The caller should retain ownership of the object streamCallback points to. At first glance weak_ptr may seem like
+     * a good candidate for streamCallback as this implies temporary ownership. However, a weak_ptr can only be created
+     * from a shared_ptr. A shared_ptr incurs some performance overhead. The callback object is likely to be accessed
+     * every few milliseconds when the stream requires new data so this overhead is something we want to avoid.
+     *
+     * This leaves a raw pointer as the logical type choice. The only caveat being that the caller must not destroy
+     * the callback before the stream has been closed.
+     *
+     * @param streamCallback
+     * @return pointer to the builder so calls can be chained
      */
-    /* Result openManagedStream(ManagedStream &stream); */
+    pub fn set_callback<F>(mut self, stream_callback: F) -> AudioStreamBuilderWithCallback<Input, F>
+    where
+        F: AudioStreamInputCallback<FrameType = (T, C)>,
+        (T, C): IsFrameType,
+    {
+        let callback = AudioStreamCallbackWrapper::<Input, F>::wrap(stream_callback);
+        self.raw._base.mStreamCallback = &callback.raw_callback() as *const _ as *mut _;
+        AudioStreamBuilderWithCallback { raw: self.raw, callback, _phantom: PhantomData }
+    }
+}
+
+impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
+    /**
+     * Specifies an object to handle data or error related callbacks from the underlying API.
+     *
+     * <strong>Important: See AudioStreamCallback for restrictions on what may be called
+     * from the callback methods.</strong>
+     *
+     * When an error callback occurs, the associated stream will be stopped and closed in a separate thread.
+     *
+     * A note on why the streamCallback parameter is a raw pointer rather than a smart pointer:
+     *
+     * The caller should retain ownership of the object streamCallback points to. At first glance weak_ptr may seem like
+     * a good candidate for streamCallback as this implies temporary ownership. However, a weak_ptr can only be created
+     * from a shared_ptr. A shared_ptr incurs some performance overhead. The callback object is likely to be accessed
+     * every few milliseconds when the stream requires new data so this overhead is something we want to avoid.
+     *
+     * This leaves a raw pointer as the logical type choice. The only caveat being that the caller must not destroy
+     * the callback before the stream has been closed.
+     *
+     * @param streamCallback
+     * @return pointer to the builder so calls can be chained
+     */
+    pub fn set_callback<F>(mut self, stream_callback: F) -> AudioStreamBuilderWithCallback<Output, F>
+    where
+        F: AudioStreamOutputCallback<FrameType = (T, C)>,
+        (T, C): IsFrameType,
+    {
+        let callback = AudioStreamCallbackWrapper::<Output, F>::wrap(stream_callback);
+        self.raw._base.mStreamCallback = &callback.raw_callback() as *const _ as *mut _;
+        AudioStreamBuilderWithCallback { raw: self.raw, callback, _phantom: PhantomData }
+    }
+}
+
+/**
+ * Factory for an audio stream.
+ */
+pub struct AudioStreamBuilderWithCallback<D, F: AudioStreamCallback> {
+    raw: ffi::oboe_AudioStreamBuilder,
+    callback: AudioStreamCallbackWrapper<D, F>,
+    _phantom: PhantomData<(D, F)>,
+}
+
+impl<D, F: AudioStreamCallback> fmt::Debug for AudioStreamBuilderWithCallback<D, F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        audio_stream_base_fmt(self, f)
+    }
+}
+
+impl<D, F: AudioStreamCallback> RawAudioStreamBase for AudioStreamBuilderWithCallback<D, F> {
+    fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
+        &self.raw._base
+    }
+
+    fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
+        &mut self.raw._base
+    }
+}
+
+impl<F: AudioStreamInputCallback + Send> AudioStreamBuilderWithCallback<Input, F> {
+    /**
+     * Create and open a stream object based on the current settings.
+     *
+     * The caller owns the pointer to the AudioStream object.
+     *
+     * @param stream pointer to a variable to receive the stream address
+     * @return OBOE_OK if successful or a negative error code
+     */
+    pub fn open_stream(mut self) -> Result<AudioStreamWithCallback<Input, F>> {
+        let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
+
+        wrap_status(unsafe {
+            ffi::oboe_AudioStreamBuilder_openStream(
+                &mut self.raw,
+                stream.as_mut_ptr(),
+            )
+        }).map(|_| AudioStreamWithCallback::wrap_raw(
+            unsafe { stream.assume_init() },
+            self.callback,
+        ))
+    }
+}
+
+impl<F: AudioStreamOutputCallback + Send> AudioStreamBuilderWithCallback<Output, F> {
+    /**
+     * Create and open a stream object based on the current settings.
+     *
+     * The caller owns the pointer to the AudioStream object.
+     *
+     * @param stream pointer to a variable to receive the stream address
+     * @return OBOE_OK if successful or a negative error code
+     */
+    pub fn open_stream(mut self) -> Result<AudioStreamWithCallback<Output, F>> {
+        let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
+
+        wrap_status(unsafe {
+            ffi::oboe_AudioStreamBuilder_openStream(
+                &mut self.raw,
+                stream.as_mut_ptr(),
+            )
+        }).map(|_| AudioStreamWithCallback::wrap_raw(
+            unsafe { stream.assume_init() },
+            self.callback,
+        ))
+    }
 }

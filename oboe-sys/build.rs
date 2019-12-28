@@ -153,7 +153,7 @@ fn generate_bindings(oboe_src: &Path, out_file: &Path) {
             format!("-I{}", oboe_src_include.display()),
         ])
         .header(oboe_ext_include.join("oboe").join("OboeExt.h").display().to_string())
-        .opaque_type("std::*")
+        //.opaque_type("std::*")
         .whitelist_type("oboe::ChannelCount")
         .whitelist_type("oboe::AudioStreamBase")
         .whitelist_type("oboe::AudioStream")
@@ -162,9 +162,9 @@ fn generate_bindings(oboe_src: &Path, out_file: &Path) {
         .whitelist_type("oboe::AudioStreamCallbackWrapper")
         .whitelist_type("oboe::StabilizedCallback")
         .whitelist_type("oboe::DefaultStreamValues")
-        .whitelist_function("oboe::convertToTextFromResult")
-	.whitelist_function("oboe::AudioStream_.+")
         .whitelist_function("oboe::AudioStreamBuilder_.+")
+	      .whitelist_function("oboe::AudioStream_.+")
+        //.blacklist_type("std_.*")
         .generate()
         .expect("Unable to generate bindings");
 

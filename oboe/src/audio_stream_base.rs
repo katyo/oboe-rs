@@ -1,9 +1,10 @@
 //use oboe_sys as ffi;
 use num_traits::FromPrimitive;
 
+use std::fmt::{self, Debug};
+
 use super::{
     ChannelCount,
-    Result,
     Direction,
     AudioFormat,
     SharingMode,
@@ -12,7 +13,6 @@ use super::{
     ContentType,
     InputPreset,
     SessionId,
-    AudioStreamCallback,
     SampleRateConversionQuality,
     RawAudioStreamBase,
 };
@@ -157,8 +157,8 @@ impl<T: RawAudioStreamBase> IsAudioStreamBase for T {
     }
 
     /*fn get_callback(&self) -> &AudioStreamCallback {
-    self._raw_base().mStreamCallback
-}*/
+        self._raw_base().mStreamCallback
+    }*/
 
     fn get_usage(&self) -> Usage {
         FromPrimitive::from_i32(self._raw_base().mUsage).unwrap()
@@ -187,4 +187,46 @@ impl<T: RawAudioStreamBase> IsAudioStreamBase for T {
     fn get_sample_rate_conversion_quality(&self) -> SampleRateConversionQuality {
         FromPrimitive::from_i32(self._raw_base().mSampleRateConversionQuality).unwrap()
     }
+}
+
+pub(crate) fn audio_stream_base_fmt<T: IsAudioStreamBase>(base: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    "DeviceId: ".fmt(f)?;
+    base.get_device_id().fmt(f)?;
+    "\nSessionId: ".fmt(f)?;
+    base.get_session_id().fmt(f)?;
+    "\nDirection: ".fmt(f)?;
+    base.get_direction().fmt(f)?;
+    if base.get_direction() == Direction::Input {
+        "\nInput preset: ".fmt(f)?;
+        base.get_input_preset().fmt(f)?;
+    }
+    "\nBuffer capacity in frames: ".fmt(f)?;
+    base.get_buffer_capacity_in_frames().fmt(f)?;
+    "\nBuffer size in frames: ".fmt(f)?;
+    base.get_buffer_size_in_frames().fmt(f)?;
+    "\nFrames per callback: ".fmt(f)?;
+    base.get_frames_per_callback().fmt(f)?;
+    "\nSample rate: ".fmt(f)?;
+    base.get_sample_rate().fmt(f)?;
+    "\nSample rate conversion quality: ".fmt(f)?;
+    base.get_sample_rate_conversion_quality().fmt(f)?;
+    "\nChannel count: ".fmt(f)?;
+    base.get_channel_count().fmt(f)?;
+    if base.is_channel_conversion_allowed() {
+        " (conversion allowed)".fmt(f)?;
+    }
+    "\nFormat: ".fmt(f)?;
+    base.get_format().fmt(f)?;
+    if base.is_format_conversion_allowed() {
+        " (conversion allowed)".fmt(f)?;
+    }
+    "\nSharing mode: ".fmt(f)?;
+    base.get_sharing_mode().fmt(f)?;
+    "\nPerformance mode: ".fmt(f)?;
+    base.get_performance_mode().fmt(f)?;
+    "\nUsage: ".fmt(f)?;
+    base.get_usage().fmt(f)?;
+    "\nContent type: ".fmt(f)?;
+    base.get_content_type().fmt(f)?;
+    '\n'.fmt(f)
 }

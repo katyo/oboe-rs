@@ -1,6 +1,13 @@
 #include "oboe/OboeExt.h"
 
 namespace oboe {
+  void AudioStream_delete(AudioStream *oboeStream) {
+    if (oboeStream) {
+      oboeStream->close();
+    }
+    delete oboeStream;
+  }
+
   Result AudioStream_open(AudioStream *oboeStream) {
     return oboeStream->open();
   }
@@ -60,5 +67,19 @@ namespace oboe {
 
   AudioApi AudioStream_getAudioApi(const AudioStream *oboeStream) {
     return oboeStream->getAudioApi();
+  }
+
+  ResultWithValue<int32_t> AudioStream_read(AudioStream *oboeStream,
+                                            void* buffer,
+                                            int32_t numFrames,
+                                            int64_t timeoutNanoseconds) {
+    return oboeStream->read(buffer, numFrames, timeoutNanoseconds);
+  }
+
+  ResultWithValue<int32_t> AudioStream_write(AudioStream *oboeStream,
+                                             const void* buffer,
+                                             int32_t numFrames,
+                                             int64_t timeoutNanoseconds) {
+    return oboeStream->write(buffer, numFrames, timeoutNanoseconds);
   }
 }

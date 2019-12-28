@@ -6,7 +6,6 @@ set(oboe-ext_sources
     src/AudioStreamWrapper.cpp
     src/AudioStreamBuilderWrapper.cpp
     src/AudioStreamCallbackWrapper.cpp
-    src/UtilitiesWrapper.cpp
     )
 
 add_library (oboe-ext ${oboe-ext_sources})

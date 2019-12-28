@@ -1,7 +1,9 @@
 use oboe_sys as ffi;
 use std::{
+    marker::PhantomData,
     mem::MaybeUninit,
-    ffi::c_void
+    ffi::c_void,
+    fmt::{self, Debug},
 };
 use num_traits::FromPrimitive;
 
@@ -9,10 +11,13 @@ use super::{
     AudioApi,
     StreamState,
 
-
     Result,
     Status,
     Error,
+
+    IsFrameType,
+
+    Input, Output,
 
     NANOS_PER_MILLISECOND,
 
@@ -23,6 +28,9 @@ use super::{
 
     wrap_status,
     wrap_result,
+    audio_stream_base_fmt,
+
+    AudioStreamCallbackWrapper,
 };
 
 pub const DEFAULT_TIMEOUT_NANOS: i64 = 2000 * NANOS_PER_MILLISECOND;
@@ -294,43 +302,6 @@ pub trait IsAudioStream: IsAudioStreamBase {
     fn get_timestamp(&mut self, clock_id: i32) -> Result<FrameTimestamp>;
 
     /**
-     * Write data from the supplied buffer into the stream. This method will block until the write
-     * is complete or it runs out of time.
-     *
-     * If `timeoutNanoseconds` is zero then this call will not wait.
-     *
-     * @param buffer The address of the first sample.
-     * @param numFrames Number of frames to write. Only complete frames will be written.
-     * @param timeoutNanoseconds Maximum number of nanoseconds to wait for completion.
-     * @return a ResultWithValue which has a result of Result::OK and a value containing the number
-     * of frames actually written, or result of Result::Error*.
-     */
-    /*fn write(&mut self,
-             const void* /* buffer */,
-             int32_t /* numFrames */,
-             int64_t /* timeoutNanoseconds */ ) -> Result<i64> {
-        return ResultWithValue<int32_t>(Result::ErrorUnimplemented);
-    }*/
-
-    /**
-     * Read data into the supplied buffer from the stream. This method will block until the read
-     * is complete or it runs out of time.
-     *
-     * If `timeoutNanoseconds` is zero then this call will not wait.
-     *
-     * @param buffer The address of the first sample.
-     * @param numFrames Number of frames to read. Only complete frames will be read.
-     * @param timeoutNanoseconds Maximum number of nanoseconds to wait for completion.
-     * @return a ResultWithValue which has a result of Result::OK and a value containing the number
-     * of frames actually read, or result of Result::Error*.
-     */
-    /*virtual ResultWithValue<int32_t> read(void* /* buffer */,
-                            int32_t /* numFrames */,
-                            int64_t /* timeoutNanoseconds */) {
-        return ResultWithValue<int32_t>(Result::ErrorUnimplemented);
-    }*/
-
-    /**
      * Get the underlying audio API which the stream uses.
      *
      * @return the API that this stream uses.
@@ -376,6 +347,51 @@ pub trait IsAudioStream: IsAudioStreamBase {
     fn wait_for_available_frames(&mut self,
                                  num_frames: i32,
                                  timeout_nanoseconds: i64) -> Result<i32>;
+
+}
+
+pub trait IsAudioInputStream: IsAudioStream {
+    type FrameType: IsFrameType;
+
+    /**
+     * Read data into the supplied buffer from the stream. This method will block until the read
+     * is complete or it runs out of time.
+     *
+     * If `timeoutNanoseconds` is zero then this call will not wait.
+     *
+     * @param buffer The address of the first sample.
+     * @param numFrames Number of frames to read. Only complete frames will be read.
+     * @param timeoutNanoseconds Maximum number of nanoseconds to wait for completion.
+     * @return a ResultWithValue which has a result of Result::OK and a value containing the number
+     * of frames actually read, or result of Result::Error*.
+     */
+    fn read(&mut self,
+            _buffer: &mut [<Self::FrameType as IsFrameType>::Type],
+            _timeout_nanoseconds: i64) -> Result<i32> {
+        Err(Error::Unimplemented)
+    }
+}
+
+pub trait IsAudioOutputStream: IsAudioStream {
+    type FrameType: IsFrameType;
+
+    /**
+     * Write data from the supplied buffer into the stream. This method will block until the write
+     * is complete or it runs out of time.
+     *
+     * If `timeoutNanoseconds` is zero then this call will not wait.
+     *
+     * @param buffer The address of the first sample.
+     * @param numFrames Number of frames to write. Only complete frames will be written.
+     * @param timeoutNanoseconds Maximum number of nanoseconds to wait for completion.
+     * @return a ResultWithValue which has a result of Result::OK and a value containing the number
+     * of frames actually written, or result of Result::Error*.
+     */
+    fn write(&mut self,
+             _buffer: &[<Self::FrameType as IsFrameType>::Type],
+             _timeout_nanoseconds: i64) -> Result<i32> {
+        Err(Error::Unimplemented)
+    }
 }
 
 impl<T: RawAudioStream + RawAudioStreamBase> IsAudioStream for T {
@@ -556,19 +572,6 @@ impl<T: RawAudioStream + RawAudioStreamBase> IsAudioStream for T {
         })
     }
 
-    /*fn write(&mut self,
-             const void* /* buffer */,
-             int32_t /* numFrames */,
-             int64_t /* timeoutNanoseconds */ ) -> Result<i64> {
-        return ResultWithValue<int32_t>(Result::ErrorUnimplemented);
-    }*/
-
-    /*virtual ResultWithValue<int32_t> read(void* /* buffer */,
-                            int32_t /* numFrames */,
-                            int64_t /* timeoutNanoseconds */) {
-        return ResultWithValue<int32_t>(Result::ErrorUnimplemented);
-    }*/
-
     fn get_audio_api(&self) -> AudioApi {
         FromPrimitive::from_i32(unsafe {
             ffi::oboe_AudioStream_getAudioApi(
@@ -576,12 +579,6 @@ impl<T: RawAudioStream + RawAudioStreamBase> IsAudioStream for T {
             )
         }).unwrap()
     }
-
-    /*AudioStreamCallback *swap_callback(AudioStreamCallback *streamCallback) {
-        AudioStreamCallback *previousCallback = mStreamCallback;
-        mStreamCallback = streamCallback;
-        return previousCallback;
-    }*/
 
     fn get_available_frames(&mut self) -> Result<i32> {
         wrap_result(unsafe {
@@ -604,28 +601,191 @@ impl<T: RawAudioStream + RawAudioStreamBase> IsAudioStream for T {
     }
 }
 
-#[derive(Debug)]
-#[repr(transparent)]
-pub struct AudioStream {
-    raw: ffi::oboe_AudioStream,
+pub(crate) fn audio_stream_fmt<T: IsAudioStreamBase + IsAudioStream>(stream: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    audio_stream_base_fmt(stream, f)?;
+    //"Frames per burst: ".fmt(f)?;
+    //stream.get_frames_per_burst().fmt(f)?;
+    "\nAudio API: ".fmt(f)?;
+    stream.get_audio_api().fmt(f)?;
+    "\nCurrent state: ".fmt(f)?;
+    stream.get_state().fmt(f)?;
+    "\nXrun count: ".fmt(f)?;
+    stream.get_xrun_count().fmt(f)?;
+    /*if stream.get_direction() == Direction::Input {
+        "\nFrames read: ".fmt(f)?;
+        stream.get_frames_read().fmt(f)?;
+    } else {
+        "\nFrames written: ".fmt(f)?;
+        stream.get_frames_written().fmt(f)?;
+    }*/
+    '\n'.fmt(f)
 }
 
-impl RawAudioStream for AudioStream {
+/**
+ * Reference to an audio stream for passing to callbacks
+ */
+#[repr(transparent)]
+pub struct AudioStreamRef<'s> {
+    raw: &'s mut ffi::oboe_AudioStream,
+}
+
+impl<'s> fmt::Debug for AudioStreamRef<'s> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        audio_stream_fmt(self, f)
+    }
+}
+
+impl<'s> AudioStreamRef<'s> {
+    pub(crate) fn wrap_raw<'a: 's>(raw: &'a mut ffi::oboe_AudioStream) -> Self {
+        Self { raw }
+    }
+}
+
+impl<'s> RawAudioStream for AudioStreamRef<'s> {
     fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        &self.raw
+        self.raw
     }
 
     fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        &mut self.raw
+        self.raw
     }
 }
 
-impl RawAudioStreamBase for AudioStream {
+impl<'s> RawAudioStreamBase for AudioStreamRef<'s> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
         &self.raw._base
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
         &mut self.raw._base
+    }
+}
+
+/**
+ * An audio stream with callback
+ */
+pub struct AudioStreamWithCallback<D, F> {
+    raw: *mut ffi::oboe_AudioStream,
+
+    #[used]
+    callback: AudioStreamCallbackWrapper<D, F>,
+}
+
+impl<D, F> fmt::Debug for AudioStreamWithCallback<D, F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        audio_stream_fmt(self, f)
+    }
+}
+
+impl<D, F> AudioStreamWithCallback<D, F> {
+    pub(crate) fn wrap_raw(raw: *mut ffi::oboe_AudioStream,
+                           callback: AudioStreamCallbackWrapper<D, F>) -> Self {
+        Self { raw, callback }
+    }
+}
+
+impl<D, F> Drop for AudioStreamWithCallback<D, F> {
+    fn drop(&mut self) {
+        unsafe { ffi::oboe_AudioStream_delete(self.raw); }
+    }
+}
+
+impl<D, F> RawAudioStream for AudioStreamWithCallback<D, F> {
+    fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
+        unsafe { &*self.raw }
+    }
+
+    fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
+        unsafe { &mut *self.raw }
+    }
+}
+
+impl<D, T> RawAudioStreamBase for AudioStreamWithCallback<D, T> {
+    fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
+        &(unsafe { &*self.raw })._base
+    }
+
+    fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
+        &mut (unsafe { &mut *self.raw })._base
+    }
+}
+
+/**
+ * The audio stream with blocking IO
+ */
+pub struct AudioStreamBlocked<D, F> {
+    raw: *mut ffi::oboe_AudioStream,
+    _phantom: PhantomData<(D, F)>,
+}
+
+impl<D, F> fmt::Debug for AudioStreamBlocked<D, F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        audio_stream_fmt(self, f)
+    }
+}
+
+impl<D, F> AudioStreamBlocked<D, F> {
+    pub(crate) fn wrap_raw(raw: *mut ffi::oboe_AudioStream) -> Self {
+        Self { raw, _phantom: PhantomData }
+    }
+}
+
+impl<D, F> Drop for AudioStreamBlocked<D, F> {
+    fn drop(&mut self) {
+        unsafe { ffi::oboe_AudioStream_delete(self.raw); }
+    }
+}
+
+impl<D, F> RawAudioStream for AudioStreamBlocked<D, F> {
+    fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
+        unsafe { &*self.raw }
+    }
+
+    fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
+        unsafe { &mut *self.raw }
+    }
+}
+
+impl<D, T> RawAudioStreamBase for AudioStreamBlocked<D, T> {
+    fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
+        &(unsafe { &*self.raw })._base
+    }
+
+    fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
+        &mut (unsafe { &mut *self.raw })._base
+    }
+}
+
+impl<F: IsFrameType> IsAudioInputStream for AudioStreamBlocked<Input, F> {
+    type FrameType = F;
+
+    fn read(&mut self,
+            buffer: &mut [<Self::FrameType as IsFrameType>::Type],
+            timeout_nanoseconds: i64) -> Result<i32> {
+        wrap_result(unsafe {
+            ffi::oboe_AudioStream_read(
+                self.raw,
+                buffer.as_mut_ptr() as *mut c_void,
+                buffer.len() as i32,
+                timeout_nanoseconds,
+            )
+        })
+    }
+}
+
+impl<F: IsFrameType> IsAudioOutputStream for AudioStreamBlocked<Output, F> {
+    type FrameType = F;
+
+    fn write(&mut self,
+             buffer: &[<Self::FrameType as IsFrameType>::Type],
+             timeout_nanoseconds: i64) -> Result<i32> {
+        wrap_result(unsafe {
+            ffi::oboe_AudioStream_write(
+                self.raw,
+                buffer.as_ptr() as *const c_void,
+                buffer.len() as i32,
+                timeout_nanoseconds,
+            )
+        })
     }
 }
