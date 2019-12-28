@@ -162,8 +162,10 @@ fn generate_bindings(oboe_src: &Path, out_file: &Path) {
         .whitelist_type("oboe::AudioStreamCallbackWrapper")
         .whitelist_type("oboe::StabilizedCallback")
         .whitelist_type("oboe::DefaultStreamValues")
+        .whitelist_type("oboe::Version")
         .whitelist_function("oboe::AudioStreamBuilder_.+")
-	      .whitelist_function("oboe::AudioStream_.+")
+        .whitelist_function("oboe::AudioStream_.+")
+        .whitelist_function("oboe::getSdkVersion")
         //.blacklist_type("std_.*")
         .generate()
         .expect("Unable to generate bindings");
