@@ -3,6 +3,9 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::{FromPrimitive};
 use oboe_sys as ffi;
 
+#[cfg(feature = "java-interface")]
+use super::request_default_stream_values;
+
 /**
  * The number of nanoseconds in a microsecond. 1,000.
  */
@@ -497,22 +500,52 @@ impl DefaultStreamValues {
     /**
      * The default sample rate to use when opening new audio streams
      */
-    pub fn sample_rate() -> i32 {
+    pub fn get_sample_rate() -> i32 {
         unsafe { ffi::oboe_DefaultStreamValues_SampleRate }
+    }
+
+    pub fn set_sample_rate(sample_rate: i32) {
+        unsafe { ffi::oboe_DefaultStreamValues_SampleRate = sample_rate; }
     }
 
     /**
      * The default frames per burst to use when opening new audio streams
      */
-    pub fn frames_per_burst() -> i32 {
+    pub fn get_frames_per_burst() -> i32 {
         unsafe { ffi::oboe_DefaultStreamValues_FramesPerBurst }
+    }
+
+    pub fn set_frames_per_burst(frames_per_burst: i32) {
+        unsafe { ffi::oboe_DefaultStreamValues_FramesPerBurst = frames_per_burst; }
     }
 
     /**
      * The default channel count to use when opening new audio streams
      */
-    pub fn channel_count() -> i32 {
+    pub fn get_channel_count() -> i32 {
         unsafe { ffi::oboe_DefaultStreamValues_ChannelCount }
+    }
+
+    pub fn set_channel_count(channel_count: i32) {
+        unsafe { ffi::oboe_DefaultStreamValues_ChannelCount = channel_count; }
+    }
+
+    /**
+     * Try request defaults from AudioManager properties.
+     */
+    pub fn request_from_properties() {
+        #[cfg(feature = "java-interface")]
+        {
+            let (sample_rate, frames_per_burst) = request_default_stream_values();
+
+            if let Some(value) = sample_rate {
+                DefaultStreamValues::set_sample_rate(value);
+            }
+
+            if let Some(value) = frames_per_burst {
+                DefaultStreamValues::set_frames_per_burst(value);
+            }
+        }
     }
 }
 
