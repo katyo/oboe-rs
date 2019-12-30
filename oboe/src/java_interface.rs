@@ -20,7 +20,7 @@ use super::{
     //get_sdk_version,
 };
 
-pub fn request_default_stream_values() -> (Option<i32>, Option<i32>) {
+pub fn request_default_stream_values() -> Result<(Option<i32>, Option<i32>), String> {
     let app = unsafe {
         AndroidApp::from_ptr(android_glue::get_android_app())
     };
@@ -28,20 +28,17 @@ pub fn request_default_stream_values() -> (Option<i32>, Option<i32>) {
     //let sdk_version = get_sdk_version();
     let sdk_version = activity.sdk_version();
 
-    let mut result = (None, None);
+    println!("SDK VERSION: {}", sdk_version);
 
     if /*sdk_version >= 17 &&*/ sdk_version < 26 {
-        if let Ok(values) = try_request_default_stream_values(
+        try_request_default_stream_values(
             &activity.vm(),
             activity.activity(),
-        ) {
-            result = values;
-        };
-        // TODO: handle error
+        ).map_err(|error| error.to_string())
+    } else {
+        // not necessary
+        Ok((None, None))
     }
-
-    // unavailable or unnecessary
-    result
 }
 
 /**
@@ -206,11 +203,16 @@ fn get_property<'a: 'b, 'b, E: 'b + Deref<Target = JNIEnv<'a>>>(env: &'b E, subj
 
 fn try_request_default_stream_values(vm: &JavaVM, activity: JObject) -> JResult<(Option<i32>, Option<i32>)> {
     let env = vm.attach_current_thread()?;
+    //let env = vm.get_env()?;
+
+    println!("ENV: {:?}", env.get_version());
 
     let audio_manager = get_system_service(
         &env, activity,
         Context::AUDIO_SERVICE,
     )?;
+
+    println!("audio manager: {:?}", audio_manager);
 
     let sample_rate = get_property(
         &env, audio_manager,

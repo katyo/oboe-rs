@@ -533,17 +533,25 @@ impl DefaultStreamValues {
     /**
      * Try request defaults from AudioManager properties.
      */
-    pub fn request_from_properties() {
+    pub fn request_from_properties() -> bool {
         #[cfg(feature = "java-interface")]
         {
-            let (sample_rate, frames_per_burst) = request_default_stream_values();
+            match request_default_stream_values() {
+                Ok((sample_rate, frames_per_burst)) => {
+                    if let Some(value) = sample_rate {
+                        DefaultStreamValues::set_sample_rate(value);
+                    }
 
-            if let Some(value) = sample_rate {
-                DefaultStreamValues::set_sample_rate(value);
-            }
+                    if let Some(value) = frames_per_burst {
+                        DefaultStreamValues::set_frames_per_burst(value);
+                    }
 
-            if let Some(value) = frames_per_burst {
-                DefaultStreamValues::set_frames_per_burst(value);
+                    true
+                },
+                Err(error) => {
+                    eprintln!("Unable to request default stream values due to: {}", error);
+                    false
+                },
             }
         }
     }
