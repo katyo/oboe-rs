@@ -24,14 +24,13 @@ use super::{
     IsFormat,
     IsChannelCount, Mono, Stereo,
 
-    AudioStreamCallback,
-    AudioStreamInputCallback,
-    AudioStreamOutputCallback,
+    AudioInputCallback,
+    AudioOutputCallback,
 
-    AudioStreamCallbackWrapper,
+    AudioCallbackWrapper,
 
-    AudioStreamBlocked,
-    AudioStreamWithCallback,
+    AudioStreamSync,
+    AudioStreamAsync,
 
     wrap_status,
     audio_stream_base_fmt,
@@ -444,7 +443,7 @@ impl<D: IsDirection, C: IsChannelCount, T: IsFormat> AudioStreamBuilder<D, C, T>
      * @param stream pointer to a variable to receive the stream address
      * @return OBOE_OK if successful or a negative error code
      */
-    pub fn open_stream(mut self) -> Result<AudioStreamBlocked<D, (T, C)>> {
+    pub fn open_stream(mut self) -> Result<AudioStreamSync<D, (T, C)>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
 
         wrap_status(unsafe {
@@ -452,7 +451,7 @@ impl<D: IsDirection, C: IsChannelCount, T: IsFormat> AudioStreamBuilder<D, C, T>
                 &mut self.raw,
                 stream.as_mut_ptr(),
             )
-        }).map(|_| AudioStreamBlocked::wrap_raw(
+        }).map(|_| AudioStreamSync::wrap_raw(
             unsafe { stream.assume_init() },
         ))
     }
@@ -480,14 +479,14 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Input, C, T> {
      * @param streamCallback
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_callback<F>(mut self, stream_callback: F) -> AudioStreamBuilderWithCallback<Input, F>
+    pub fn set_callback<F>(mut self, stream_callback: F) -> AudioStreamBuilderAsync<Input, F>
     where
-        F: AudioStreamInputCallback<FrameType = (T, C)>,
+        F: AudioInputCallback<FrameType = (T, C)>,
         (T, C): IsFrameType,
     {
-        let callback = AudioStreamCallbackWrapper::<Input, F>::wrap(stream_callback);
+        let callback = AudioCallbackWrapper::<Input, F>::wrap(stream_callback);
         self.raw._base.mStreamCallback = &callback.raw_callback() as *const _ as *mut _;
-        AudioStreamBuilderWithCallback { raw: self.raw, callback, _phantom: PhantomData }
+        AudioStreamBuilderAsync { raw: self.raw, callback, _phantom: PhantomData }
     }
 }
 
@@ -513,33 +512,33 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
      * @param streamCallback
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_callback<F>(mut self, stream_callback: F) -> AudioStreamBuilderWithCallback<Output, F>
+    pub fn set_callback<F>(mut self, stream_callback: F) -> AudioStreamBuilderAsync<Output, F>
     where
-        F: AudioStreamOutputCallback<FrameType = (T, C)>,
+        F: AudioOutputCallback<FrameType = (T, C)>,
         (T, C): IsFrameType,
     {
-        let callback = AudioStreamCallbackWrapper::<Output, F>::wrap(stream_callback);
+        let callback = AudioCallbackWrapper::<Output, F>::wrap(stream_callback);
         self.raw._base.mStreamCallback = &callback.raw_callback() as *const _ as *mut _;
-        AudioStreamBuilderWithCallback { raw: self.raw, callback, _phantom: PhantomData }
+        AudioStreamBuilderAsync { raw: self.raw, callback, _phantom: PhantomData }
     }
 }
 
 /**
  * Factory for an audio stream.
  */
-pub struct AudioStreamBuilderWithCallback<D, F: AudioStreamCallback> {
+pub struct AudioStreamBuilderAsync<D, F> {
     raw: ffi::oboe_AudioStreamBuilder,
-    callback: AudioStreamCallbackWrapper<D, F>,
+    callback: AudioCallbackWrapper<D, F>,
     _phantom: PhantomData<(D, F)>,
 }
 
-impl<D, F: AudioStreamCallback> fmt::Debug for AudioStreamBuilderWithCallback<D, F> {
+impl<D, F> fmt::Debug for AudioStreamBuilderAsync<D, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         audio_stream_base_fmt(self, f)
     }
 }
 
-impl<D, F: AudioStreamCallback> RawAudioStreamBase for AudioStreamBuilderWithCallback<D, F> {
+impl<D, F> RawAudioStreamBase for AudioStreamBuilderAsync<D, F> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
         &self.raw._base
     }
@@ -549,7 +548,7 @@ impl<D, F: AudioStreamCallback> RawAudioStreamBase for AudioStreamBuilderWithCal
     }
 }
 
-impl<F: AudioStreamInputCallback + Send> AudioStreamBuilderWithCallback<Input, F> {
+impl<F: AudioInputCallback + Send> AudioStreamBuilderAsync<Input, F> {
     /**
      * Create and open a stream object based on the current settings.
      *
@@ -558,7 +557,7 @@ impl<F: AudioStreamInputCallback + Send> AudioStreamBuilderWithCallback<Input, F
      * @param stream pointer to a variable to receive the stream address
      * @return OBOE_OK if successful or a negative error code
      */
-    pub fn open_stream(mut self) -> Result<AudioStreamWithCallback<Input, F>> {
+    pub fn open_stream(mut self) -> Result<AudioStreamAsync<Input, F>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
 
         wrap_status(unsafe {
@@ -566,14 +565,14 @@ impl<F: AudioStreamInputCallback + Send> AudioStreamBuilderWithCallback<Input, F
                 &mut self.raw,
                 stream.as_mut_ptr(),
             )
-        }).map(|_| AudioStreamWithCallback::wrap_raw(
+        }).map(|_| AudioStreamAsync::wrap_raw(
             unsafe { stream.assume_init() },
             self.callback,
         ))
     }
 }
 
-impl<F: AudioStreamOutputCallback + Send> AudioStreamBuilderWithCallback<Output, F> {
+impl<F: AudioOutputCallback + Send> AudioStreamBuilderAsync<Output, F> {
     /**
      * Create and open a stream object based on the current settings.
      *
@@ -582,7 +581,7 @@ impl<F: AudioStreamOutputCallback + Send> AudioStreamBuilderWithCallback<Output,
      * @param stream pointer to a variable to receive the stream address
      * @return OBOE_OK if successful or a negative error code
      */
-    pub fn open_stream(mut self) -> Result<AudioStreamWithCallback<Output, F>> {
+    pub fn open_stream(mut self) -> Result<AudioStreamAsync<Output, F>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
 
         wrap_status(unsafe {
@@ -590,7 +589,7 @@ impl<F: AudioStreamOutputCallback + Send> AudioStreamBuilderWithCallback<Output,
                 &mut self.raw,
                 stream.as_mut_ptr(),
             )
-        }).map(|_| AudioStreamWithCallback::wrap_raw(
+        }).map(|_| AudioStreamAsync::wrap_raw(
             unsafe { stream.assume_init() },
             self.callback,
         ))

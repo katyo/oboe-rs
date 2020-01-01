@@ -21,21 +21,23 @@ use super::{
 
     NANOS_PER_MILLISECOND,
 
-    IsAudioStreamBase,
+    AudioStreamBase,
     RawAudioStreamBase,
     RawAudioStream,
+    RawAudioInputStream,
+    RawAudioOutputStream,
     FrameTimestamp,
 
     wrap_status,
     wrap_result,
     audio_stream_base_fmt,
 
-    AudioStreamCallbackWrapper,
+    AudioCallbackWrapper,
 };
 
 pub const DEFAULT_TIMEOUT_NANOS: i64 = 2000 * NANOS_PER_MILLISECOND;
 
-pub trait IsAudioStream: IsAudioStreamBase {
+pub trait AudioStream: AudioStreamBase {
     /**
      * Open a stream based on the current settings.
      *
@@ -242,22 +244,6 @@ pub trait IsAudioStream: IsAudioStreamBase {
     fn get_bytes_per_sample(&mut self) -> i32;
 
     /**
-     * The number of audio frames written into the stream.
-     * This monotonic counter will never get reset.
-     *
-     * @return the number of frames written so far
-     */
-    fn get_frames_written(&mut self) -> i64;
-
-    /**
-     * The number of audio frames read from the stream.
-     * This monotonic counter will never get reset.
-     *
-     * @return the number of frames read so far
-     */
-    fn get_frames_read(&mut self) -> i64;
-
-    /**
      * Calculate the latency of a stream based on getTimestamp().
      *
      * Output latency is the time it takes for a given frame to travel from the
@@ -350,7 +336,23 @@ pub trait IsAudioStream: IsAudioStreamBase {
 
 }
 
-pub trait IsAudioInputStream: IsAudioStream {
+/**
+ * The stream which can be used for audio input
+ */
+pub trait AudioInputStream: AudioStream {
+    /**
+     * The number of audio frames read from the stream.
+     * This monotonic counter will never get reset.
+     *
+     * @return the number of frames read so far
+     */
+    fn get_frames_read(&mut self) -> i64;
+}
+
+/**
+ * The stream which can be used for audio input in synchronous mode
+ */
+pub trait AudioInputStreamSync: AudioInputStream {
     type FrameType: IsFrameType;
 
     /**
@@ -372,7 +374,23 @@ pub trait IsAudioInputStream: IsAudioStream {
     }
 }
 
-pub trait IsAudioOutputStream: IsAudioStream {
+/**
+ * The stream which can be used for audio output
+ */
+pub trait AudioOutputStream: AudioStream {
+    /**
+     * The number of audio frames written into the stream.
+     * This monotonic counter will never get reset.
+     *
+     * @return the number of frames written so far
+     */
+    fn get_frames_written(&mut self) -> i64;
+}
+
+/**
+ * The stream which can be used for audio output in synchronous mode
+ */
+pub trait AudioOutputStreamSync: AudioOutputStream {
     type FrameType: IsFrameType;
 
     /**
@@ -394,7 +412,7 @@ pub trait IsAudioOutputStream: IsAudioStream {
     }
 }
 
-impl<T: RawAudioStream + RawAudioStreamBase> IsAudioStream for T {
+impl<T: RawAudioStream + RawAudioStreamBase> AudioStream for T {
     fn open(&mut self) -> Status {
         wrap_status(unsafe {
             ffi::oboe_AudioStream_open(self._raw_stream_mut())
@@ -539,22 +557,6 @@ impl<T: RawAudioStream + RawAudioStreamBase> IsAudioStream for T {
         }
     }
 
-    fn get_frames_written(&mut self) -> i64 {
-        unsafe {
-            ffi::oboe_AudioStream_getFramesWritten(
-                self._raw_stream_mut() as *mut _ as *mut c_void,
-            )
-        }
-    }
-
-    fn get_frames_read(&mut self) -> i64 {
-        unsafe {
-            ffi::oboe_AudioStream_getFramesRead(
-                self._raw_stream_mut() as *mut _ as *mut c_void,
-            )
-        }
-    }
-
     fn calculate_latency_millis(&mut self) -> Result<f64> {
         wrap_result(unsafe {
             ffi::oboe_AudioStream_calculateLatencyMillis(
@@ -601,7 +603,27 @@ impl<T: RawAudioStream + RawAudioStreamBase> IsAudioStream for T {
     }
 }
 
-pub(crate) fn audio_stream_fmt<T: IsAudioStreamBase + IsAudioStream>(stream: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<T: RawAudioInputStream + RawAudioStream + RawAudioStreamBase> AudioInputStream for T {
+    fn get_frames_read(&mut self) -> i64 {
+        unsafe {
+            ffi::oboe_AudioStream_getFramesRead(
+                self._raw_stream_mut() as *mut _ as *mut c_void,
+            )
+        }
+    }
+}
+
+impl<T: RawAudioOutputStream + RawAudioStream + RawAudioStreamBase> AudioOutputStream for T {
+    fn get_frames_written(&mut self) -> i64 {
+        unsafe {
+            ffi::oboe_AudioStream_getFramesWritten(
+                self._raw_stream_mut() as *mut _ as *mut c_void,
+            )
+        }
+    }
+}
+
+pub(crate) fn audio_stream_fmt<T: AudioStreamBase + AudioStream>(stream: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     audio_stream_base_fmt(stream, f)?;
     //"Frames per burst: ".fmt(f)?;
     //stream.get_frames_per_burst().fmt(f)?;
@@ -625,33 +647,24 @@ pub(crate) fn audio_stream_fmt<T: IsAudioStreamBase + IsAudioStream>(stream: &T,
  * Reference to an audio stream for passing to callbacks
  */
 #[repr(transparent)]
-pub struct AudioStreamRef<'s> {
+pub struct AudioStreamRef<'s, D> {
     raw: &'s mut ffi::oboe_AudioStream,
+    _phantom: PhantomData<D>
 }
 
-impl<'s> fmt::Debug for AudioStreamRef<'s> {
+impl<'s, D> fmt::Debug for AudioStreamRef<'s, D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         audio_stream_fmt(self, f)
     }
 }
 
-impl<'s> AudioStreamRef<'s> {
+impl<'s, D> AudioStreamRef<'s, D> {
     pub(crate) fn wrap_raw<'a: 's>(raw: &'a mut ffi::oboe_AudioStream) -> Self {
-        Self { raw }
+        Self { raw, _phantom: PhantomData }
     }
 }
 
-impl<'s> RawAudioStream for AudioStreamRef<'s> {
-    fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        self.raw
-    }
-
-    fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        self.raw
-    }
-}
-
-impl<'s> RawAudioStreamBase for AudioStreamRef<'s> {
+impl<'s, D> RawAudioStreamBase for AudioStreamRef<'s, D> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
         &self.raw._base
     }
@@ -661,46 +674,50 @@ impl<'s> RawAudioStreamBase for AudioStreamRef<'s> {
     }
 }
 
+impl<'s, D> RawAudioStream for AudioStreamRef<'s, D> {
+    fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
+        self.raw
+    }
+
+    fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
+        self.raw
+    }
+}
+
+impl<'s> RawAudioInputStream for AudioStreamRef<'s, Input> {}
+
+impl<'s> RawAudioOutputStream for AudioStreamRef<'s, Output> {}
+
 /**
  * An audio stream with callback
  */
-pub struct AudioStreamWithCallback<D, F> {
+pub struct AudioStreamAsync<D, F> {
     raw: *mut ffi::oboe_AudioStream,
 
     #[used]
-    callback: AudioStreamCallbackWrapper<D, F>,
+    callback: AudioCallbackWrapper<D, F>,
 }
 
-impl<D, F> fmt::Debug for AudioStreamWithCallback<D, F> {
+impl<D, F> fmt::Debug for AudioStreamAsync<D, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         audio_stream_fmt(self, f)
     }
 }
 
-impl<D, F> AudioStreamWithCallback<D, F> {
+impl<D, F> AudioStreamAsync<D, F> {
     pub(crate) fn wrap_raw(raw: *mut ffi::oboe_AudioStream,
-                           callback: AudioStreamCallbackWrapper<D, F>) -> Self {
+                           callback: AudioCallbackWrapper<D, F>) -> Self {
         Self { raw, callback }
     }
 }
 
-impl<D, F> Drop for AudioStreamWithCallback<D, F> {
+impl<D, F> Drop for AudioStreamAsync<D, F> {
     fn drop(&mut self) {
         unsafe { ffi::oboe_AudioStream_delete(self.raw); }
     }
 }
 
-impl<D, F> RawAudioStream for AudioStreamWithCallback<D, F> {
-    fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        unsafe { &*self.raw }
-    }
-
-    fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        unsafe { &mut *self.raw }
-    }
-}
-
-impl<D, T> RawAudioStreamBase for AudioStreamWithCallback<D, T> {
+impl<D, T> RawAudioStreamBase for AudioStreamAsync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
         &(unsafe { &*self.raw })._base
     }
@@ -710,43 +727,47 @@ impl<D, T> RawAudioStreamBase for AudioStreamWithCallback<D, T> {
     }
 }
 
+impl<D, F> RawAudioStream for AudioStreamAsync<D, F> {
+    fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
+        unsafe { &*self.raw }
+    }
+
+    fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
+        unsafe { &mut *self.raw }
+    }
+}
+
+impl<F> RawAudioInputStream for AudioStreamAsync<Input, F> {}
+
+impl<F> RawAudioOutputStream for AudioStreamAsync<Output, F> {}
+
 /**
  * The audio stream with blocking IO
  */
-pub struct AudioStreamBlocked<D, F> {
+pub struct AudioStreamSync<D, F> {
     raw: *mut ffi::oboe_AudioStream,
     _phantom: PhantomData<(D, F)>,
 }
 
-impl<D, F> fmt::Debug for AudioStreamBlocked<D, F> {
+impl<D, F> fmt::Debug for AudioStreamSync<D, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         audio_stream_fmt(self, f)
     }
 }
 
-impl<D, F> AudioStreamBlocked<D, F> {
+impl<D, F> AudioStreamSync<D, F> {
     pub(crate) fn wrap_raw(raw: *mut ffi::oboe_AudioStream) -> Self {
         Self { raw, _phantom: PhantomData }
     }
 }
 
-impl<D, F> Drop for AudioStreamBlocked<D, F> {
+impl<D, F> Drop for AudioStreamSync<D, F> {
     fn drop(&mut self) {
         unsafe { ffi::oboe_AudioStream_delete(self.raw); }
     }
 }
 
-impl<D, F> RawAudioStream for AudioStreamBlocked<D, F> {
-    fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        unsafe { &*self.raw }
-    }
-
-    fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        unsafe { &mut *self.raw }
-    }
-}
-
-impl<D, T> RawAudioStreamBase for AudioStreamBlocked<D, T> {
+impl<D, T> RawAudioStreamBase for AudioStreamSync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
         &(unsafe { &*self.raw })._base
     }
@@ -756,7 +777,21 @@ impl<D, T> RawAudioStreamBase for AudioStreamBlocked<D, T> {
     }
 }
 
-impl<F: IsFrameType> IsAudioInputStream for AudioStreamBlocked<Input, F> {
+impl<D, F> RawAudioStream for AudioStreamSync<D, F> {
+    fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
+        unsafe { &*self.raw }
+    }
+
+    fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
+        unsafe { &mut *self.raw }
+    }
+}
+
+impl<F> RawAudioInputStream for AudioStreamSync<Input, F> {}
+
+impl<F> RawAudioOutputStream for AudioStreamSync<Output, F> {}
+
+impl<F: IsFrameType> AudioInputStreamSync for AudioStreamSync<Input, F> {
     type FrameType = F;
 
     fn read(&mut self,
@@ -773,7 +808,7 @@ impl<F: IsFrameType> IsAudioInputStream for AudioStreamBlocked<Input, F> {
     }
 }
 
-impl<F: IsFrameType> IsAudioOutputStream for AudioStreamBlocked<Output, F> {
+impl<F: IsFrameType> AudioOutputStreamSync for AudioStreamSync<Output, F> {
     type FrameType = F;
 
     fn write(&mut self,

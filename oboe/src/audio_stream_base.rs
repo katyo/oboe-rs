@@ -20,7 +20,7 @@ use super::{
 /**
  * Base trait containing parameters for audio streams and builders.
  */
-pub trait IsAudioStreamBase {
+pub trait AudioStreamBase {
     /**
      * @return number of channels, for example 2 for stereo, or kUnspecified
      */
@@ -115,7 +115,7 @@ pub trait IsAudioStreamBase {
     fn get_sample_rate_conversion_quality(&self) -> SampleRateConversionQuality;
 }
 
-impl<T: RawAudioStreamBase> IsAudioStreamBase for T {
+impl<T: RawAudioStreamBase> AudioStreamBase for T {
     fn get_channel_count(&self) -> ChannelCount {
         FromPrimitive::from_i32(self._raw_base().mChannelCount).unwrap()
     }
@@ -189,7 +189,7 @@ impl<T: RawAudioStreamBase> IsAudioStreamBase for T {
     }
 }
 
-pub(crate) fn audio_stream_base_fmt<T: IsAudioStreamBase>(base: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+pub(crate) fn audio_stream_base_fmt<T: AudioStreamBase>(base: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     "DeviceId: ".fmt(f)?;
     base.get_device_id().fmt(f)?;
     "\nSessionId: ".fmt(f)?;

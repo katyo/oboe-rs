@@ -9,3 +9,9 @@ pub trait RawAudioStream {
     fn _raw_stream(&self) -> &ffi::oboe_AudioStream;
     fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream;
 }
+
+/// The raw marker for input stream
+pub trait RawAudioInputStream {}
+
+/// The raw marker for output stream
+pub trait RawAudioOutputStream {}

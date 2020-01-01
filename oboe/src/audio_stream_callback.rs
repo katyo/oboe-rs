@@ -17,6 +17,8 @@ use super::{
     Input, Output,
     DataCallbackResult,
     AudioStreamRef,
+    AudioInputStream,
+    AudioOutputStream,
 };
 
 /**
@@ -26,7 +28,19 @@ use super::{
  * 2) being alerted when a stream has an error using `onError*` methods
  *
  */
-pub trait AudioStreamCallback {
+pub trait AudioInputCallback {
+    /**
+     * The sample type and number of channels for processing.
+     *
+     * Oboe supports only two sample types:
+     *
+     * - **i16** - signed 16-bit integer samples
+     * - **f32** - 32-bit floating point samples
+     *
+     * Oboe supports only mono and stereo channel configurations.
+     */
+    type FrameType: IsFrameType;
+
     /**
      * This will be called when an error occurs on a stream or when the stream is disconnected.
      *
@@ -44,7 +58,7 @@ pub trait AudioStreamCallback {
      */
     fn on_error_before_close(
         &mut self,
-        _audio_stream: &mut AudioStreamRef,
+        _audio_stream: &mut dyn AudioInputStream,
         _error: Error
     ) {}
 
@@ -62,30 +76,9 @@ pub trait AudioStreamCallback {
      */
     fn on_error_after_close(
         &mut self,
-        _audio_stream: &mut AudioStreamRef,
+        _audio_stream: &mut dyn AudioInputStream,
         _error: Error
     ) {}
-}
-
-/**
- * AudioStreamCallback defines a callback interface for:
- *
- * 1) moving data to/from an audio stream using `onAudioReady`
- * 2) being alerted when a stream has an error using `onError*` methods
- *
- */
-pub trait AudioStreamInputCallback: AudioStreamCallback {
-    /**
-     * The sample type and number of channels for processing.
-     *
-     * Oboe supports only two sample types:
-     *
-     * - **i16** - signed 16-bit integer samples
-     * - **f32** - 32-bit floating point samples
-     *
-     * Oboe supports only mono and stereo channel configurations.
-     */
-    type FrameType: IsFrameType;
 
     /**
      * A buffer is ready for processing.
@@ -132,7 +125,7 @@ pub trait AudioStreamInputCallback: AudioStreamCallback {
      */
     fn on_audio_ready(
         &mut self,
-        audio_stream: &mut AudioStreamRef,
+        audio_stream: &mut dyn AudioInputStream,
         audio_data: &[<Self::FrameType as IsFrameType>::Type]
     ) -> DataCallbackResult;
 }
@@ -144,7 +137,7 @@ pub trait AudioStreamInputCallback: AudioStreamCallback {
  * 2) being alerted when a stream has an error using `onError*` methods
  *
  */
-pub trait AudioStreamOutputCallback: AudioStreamCallback {
+pub trait AudioOutputCallback {
     /**
      * The sample type and number of channels for processing.
      *
@@ -156,6 +149,45 @@ pub trait AudioStreamOutputCallback: AudioStreamCallback {
      * Oboe supports only mono and stereo channel configurations.
      */
     type FrameType: IsFrameType;
+
+    /**
+     * This will be called when an error occurs on a stream or when the stream is disconnected.
+     *
+     * Note that this will be called on a different thread than the onAudioReady() thread.
+     * This thread will be created by Oboe.
+     *
+     * The underlying stream will already be stopped by Oboe but not yet closed.
+     * So the stream can be queried.
+     *
+     * Do not close or delete the stream in this method because it will be
+     * closed after this method returns.
+     *
+     * @param oboeStream pointer to the associated stream
+     * @param error
+     */
+    fn on_error_before_close(
+        &mut self,
+        _audio_stream: &mut dyn AudioOutputStream,
+        _error: Error
+    ) {}
+
+    /**
+     * This will be called when an error occurs on a stream or when the stream is disconnected.
+     * The underlying AAudio or OpenSL ES stream will already be stopped AND closed by Oboe.
+     * So the underlying stream cannot be referenced.
+     * But you can still query most parameters.
+     *
+     * This callback could be used to reopen a new stream on another device.
+     * You can safely delete the old AudioStream in this method.
+     *
+     * @param oboeStream pointer to the associated stream
+     * @param error
+     */
+    fn on_error_after_close(
+        &mut self,
+        _audio_stream: &mut dyn AudioOutputStream,
+        _error: Error
+    ) {}
 
     /**
      * A buffer is ready for processing.
@@ -201,33 +233,33 @@ pub trait AudioStreamOutputCallback: AudioStreamCallback {
      * @return DataCallbackResult::Continue or DataCallbackResult::Stop
      */
     fn on_audio_ready(&mut self,
-                      audio_stream: &mut AudioStreamRef,
+                      audio_stream: &mut dyn AudioOutputStream,
                       audio_data: &mut [<Self::FrameType as IsFrameType>::Type]) -> DataCallbackResult;
 }
 
-pub struct AudioStreamCallbackWrapper<D, T> {
+pub(crate) struct AudioCallbackWrapper<D, T> {
     raw: ffi::oboe_AudioStreamCallbackWrapper,
     callback: T,
     _phantom: PhantomData<D>,
 }
 
-impl<D, T> AudioStreamCallbackWrapper<D, T> {
+impl<D, T> AudioCallbackWrapper<D, T> {
     pub(crate) fn raw_callback(&self) -> &ffi::oboe_AudioStreamCallbackWrapper {
         &self.raw
     }
 }
 
-impl<T> AudioStreamCallbackWrapper<Input, T>
+impl<T> AudioCallbackWrapper<Input, T>
 where
-    T: AudioStreamInputCallback,
+    T: AudioInputCallback,
 {
     pub(crate) fn wrap(callback: T) -> Self {
         let mut wrapper = Self {
             raw: unsafe {
                 ffi::oboe_AudioStreamCallbackWrapper::new(
                     Some(on_audio_ready_input_wrapper::<T>),
-                    Some(on_error_before_close_wrapper::<T>),
-                    Some(on_error_after_close_wrapper::<T>),
+                    Some(on_error_before_close_input_wrapper::<T>),
+                    Some(on_error_after_close_input_wrapper::<T>),
                 )
             },
             callback,
@@ -240,17 +272,17 @@ where
     }
 }
 
-impl<T> AudioStreamCallbackWrapper<Output, T>
+impl<T> AudioCallbackWrapper<Output, T>
 where
-    T: AudioStreamOutputCallback,
+    T: AudioOutputCallback,
 {
     pub(crate) fn wrap(callback: T) -> Self {
         let mut wrapper = Self {
             raw: unsafe {
                 ffi::oboe_AudioStreamCallbackWrapper::new(
                     Some(on_audio_ready_output_wrapper::<T>),
-                    Some(on_error_before_close_wrapper::<T>),
-                    Some(on_error_after_close_wrapper::<T>),
+                    Some(on_error_before_close_output_wrapper::<T>),
+                    Some(on_error_after_close_output_wrapper::<T>),
                 )
             },
             callback,
@@ -263,7 +295,35 @@ where
     }
 }
 
-unsafe extern "C" fn on_audio_ready_input_wrapper<T: AudioStreamInputCallback>(
+unsafe extern "C" fn on_error_before_close_input_wrapper<T: AudioInputCallback>(
+    context: *mut c_void,
+    audio_stream: *mut ffi::oboe_AudioStream,
+    error: ffi::oboe_Result,
+) {
+    let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
+    let callback = &mut *(context as *mut T);
+
+    callback.on_error_before_close(
+        &mut audio_stream,
+        FromPrimitive::from_i32(error).unwrap()
+    );
+}
+
+unsafe extern "C" fn on_error_after_close_input_wrapper<T: AudioInputCallback>(
+    context: *mut c_void,
+    audio_stream: *mut ffi::oboe_AudioStream,
+    error: ffi::oboe_Result,
+) {
+    let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
+    let callback = &mut *(context as *mut T);
+
+    callback.on_error_after_close(
+        &mut audio_stream,
+        FromPrimitive::from_i32(error).unwrap()
+    );
+}
+
+unsafe extern "C" fn on_audio_ready_input_wrapper<T: AudioInputCallback>(
     context: *mut c_void,
     audio_stream: *mut ffi::oboe_AudioStream,
     audio_data: *mut c_void,
@@ -284,7 +344,35 @@ unsafe extern "C" fn on_audio_ready_input_wrapper<T: AudioStreamInputCallback>(
     ) as i32
 }
 
-unsafe extern "C" fn on_audio_ready_output_wrapper<T: AudioStreamOutputCallback>(
+unsafe extern "C" fn on_error_before_close_output_wrapper<T: AudioOutputCallback>(
+    context: *mut c_void,
+    audio_stream: *mut ffi::oboe_AudioStream,
+    error: ffi::oboe_Result,
+) {
+    let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
+    let callback = &mut *(context as *mut T);
+
+    callback.on_error_before_close(
+        &mut audio_stream,
+        FromPrimitive::from_i32(error).unwrap()
+    );
+}
+
+unsafe extern "C" fn on_error_after_close_output_wrapper<T: AudioOutputCallback>(
+    context: *mut c_void,
+    audio_stream: *mut ffi::oboe_AudioStream,
+    error: ffi::oboe_Result,
+) {
+    let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
+    let callback = &mut *(context as *mut T);
+
+    callback.on_error_after_close(
+        &mut audio_stream,
+        FromPrimitive::from_i32(error).unwrap()
+    );
+}
+
+unsafe extern "C" fn on_audio_ready_output_wrapper<T: AudioOutputCallback>(
     context: *mut c_void,
     audio_stream: *mut ffi::oboe_AudioStream,
     audio_data: *mut c_void,
@@ -303,32 +391,4 @@ unsafe extern "C" fn on_audio_ready_output_wrapper<T: AudioStreamOutputCallback>
         &mut audio_stream,
         audio_data,
     ) as i32
-}
-
-unsafe extern "C" fn on_error_before_close_wrapper<T: AudioStreamCallback>(
-    context: *mut c_void,
-    audio_stream: *mut ffi::oboe_AudioStream,
-    error: ffi::oboe_Result,
-) {
-    let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
-    let callback = &mut *(context as *mut T);
-
-    callback.on_error_before_close(
-        &mut audio_stream,
-        FromPrimitive::from_i32(error).unwrap()
-    );
-}
-
-unsafe extern "C" fn on_error_after_close_wrapper<T: AudioStreamCallback>(
-    context: *mut c_void,
-    audio_stream: *mut ffi::oboe_AudioStream,
-    error: ffi::oboe_Result,
-) {
-    let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
-    let callback = &mut *(context as *mut T);
-
-    callback.on_error_after_close(
-        &mut audio_stream,
-        FromPrimitive::from_i32(error).unwrap()
-    );
 }
