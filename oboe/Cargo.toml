@@ -36,3 +36,6 @@ generate-bindings = ["oboe-sys/generate-bindings"]
 compile-library = ["oboe-sys/compile-library"]
 java-interface = ["android-ndk", "android_glue", "jni"]
 rustdoc = ["oboe-sys/rustdoc", "android-ndk/rustdoc", "java-interface"]
+
+[package.metadata.docs.rs]
+features = ["rustdoc"]

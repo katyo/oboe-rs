@@ -32,3 +32,6 @@ optional = true
 generate-bindings = ["bindgen", "git2"]
 compile-library = ["cmake", "git2"]
 rustdoc = []
+
+[package.metadata.docs.rs]
+features = ["rustdoc"]
