@@ -209,10 +209,8 @@ fn compile_library(oboe_src: &Path, oboe_ext: &Path) -> (Vec<String>, Vec<String
 
 #[cfg(any(feature = "generate-bindings", feature = "compile-library"))]
 fn fetch_oboe(out_dir: &Path) { // clonning oboe git repo
-    //let repo = "https://github.com/google/oboe";
-    let repo = "https://github.com/katyo/oboe";
-    //let version = "1.3-stable";
-    let version = "avoid-global-constant-vector";
+    let repo = "https://github.com/google/oboe";
+    let version = "master";
 
     let url = env::var("OBOE_GIT_URL")
         .unwrap_or_else(|_| repo.into());
