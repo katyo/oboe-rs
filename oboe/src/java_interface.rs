@@ -1,15 +1,16 @@
-use std::ops::Deref;
+use std::sync::Arc;
 
 use num_derive::{FromPrimitive};
 use num_traits::{FromPrimitive};
 
 use android_ndk::{
     android_app::AndroidApp,
+    native_activity::NativeActivity,
 };
 
 use jni::{
-    JavaVM,
     JNIEnv,
+    Executor,
     objects::{JValue, JObject, JList},
     strings::{JavaStr},
     errors::{Result as JResult},
@@ -30,11 +31,9 @@ pub fn request_default_stream_values() -> Result<(Option<i32>, Option<i32>), Str
 
     println!("SDK VERSION: {}", sdk_version);
 
-    if /*sdk_version >= 17 &&*/ sdk_version < 26 {
-        try_request_default_stream_values(
-            &activity.vm(),
-            activity.activity(),
-        ).map_err(|error| error.to_string())
+    if /*sdk_version >= 17 &&*/ sdk_version < 30 /*26*/ {
+        try_request_default_stream_values(&activity)
+            .map_err(|error| error.to_string())
     } else {
         // not necessary
         Ok((None, None))
@@ -149,10 +148,8 @@ pub fn request_devices_info() -> Result<Vec<AudioDeviceInfo>, String> {
     };
     let activity = app.activity();
 
-    try_request_devices_info(
-        &activity.vm(),
-        activity.activity(),
-    ).map_err(|error| error.to_string())
+    try_request_devices_info(&activity)
+        .map_err(|error| error.to_string())
 }
 
 struct Context;
@@ -171,98 +168,124 @@ impl AudioManager {
     pub const GET_DEVICES_OUTPUTS: i32 = 1 << 1;
     pub const GET_DEVICES_ALL: i32 = Self::GET_DEVICES_INPUTS | Self::GET_DEVICES_OUTPUTS;
 
-    fn get_devices<'a: 'b, 'b, E: 'b + Deref<Target = JNIEnv<'a>>>(env: &'b E, subject: JObject, flags: i32) -> JResult<JList<'a, 'b>> {
-        JList::from_env(env, env.call_method(
+    fn get_devices<'a: 'b, 'b>(env: &'b JNIEnv<'a>, subject: JObject, flags: i32) -> JResult<JList<'a, 'b>> {
+        env.get_list(env.call_method(
             subject,
             "getDevices",
             "(I)[Landroid/media/AudioDeviceInfo;",
-            &[JValue::from(flags)],
+            &[flags.into()],
         )?.l()?)
     }
 }
 
-fn get_system_service<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, subject: JObject, name: &str) -> JResult<JObject<'a>> {
+fn get_system_service<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<JObject<'a>> {
     env.call_method(
         subject,
         "getSystemService",
         "(Ljava/lang/String;)Ljava/lang/Object;",
-        &[JValue::from(JObject::from(env.new_string(name)?))],
+        &[JObject::from(env.new_string(name)?).into()],
     )?.l()
 }
 
-fn get_property<'a: 'b, 'b, E: 'b + Deref<Target = JNIEnv<'a>>>(env: &'b E, subject: JObject, name: &str) -> JResult<JavaStr<'a, 'b>> {
+fn get_property<'a: 'b, 'b>(env: &'b JNIEnv<'a>, subject: JObject, name: &str) -> JResult<JavaStr<'a, 'b>> {
     env.get_string(
         env.call_method(
             subject,
             "getProperty",
             "(Ljava/lang/String;)Ljava/lang/String;",
-            &[JValue::from(JObject::from(env.new_string(name)?))],
+            &[JObject::from(env.new_string(name)?).into()],
         )?.l()?.into()
     )
 }
 
-fn try_request_default_stream_values(vm: &JavaVM, activity: JObject) -> JResult<(Option<i32>, Option<i32>)> {
-    let env = vm.attach_current_thread()?;
-    //let env = vm.get_env()?;
+fn try_request_default_stream_values(activity: &NativeActivity) -> JResult<(Option<i32>, Option<i32>)> {
+    let vm = Arc::new(activity.vm());
 
-    println!("ENV: {:?}", env.get_version());
+    let activity = activity.activity();
 
-    let audio_manager = get_system_service(
-        &env, activity,
-        Context::AUDIO_SERVICE,
-    )?;
+    println!("Attached threads: {}", vm.threads_attached());
 
-    println!("audio manager: {:?}", audio_manager);
+    let exec = Executor::new(vm);
 
-    let sample_rate = get_property(
-        &env, audio_manager,
-        AudioManager::PROPERTY_OUTPUT_SAMPLE_RATE
-    )?;
+    exec.with_attached(|env| {
+        println!("ENV: {:?}", env.get_version());
+        println!("Activity: {:?}", activity);
 
-    let frames_per_burst = get_property(
-        &env, audio_manager,
-        AudioManager::PROPERTY_OUTPUT_FRAMES_PER_BUFFER
-    )?;
+        let class = env.find_class("android/app/NativeActivity")?;
 
-    Ok((
-        (*sample_rate).to_str().ok().and_then(|s| s.parse().ok()),
-        (*frames_per_burst).to_str().ok().and_then(|s| s.parse().ok()),
-    ))
+        println!("Found NativeActivity class: {:?}", class);
+
+        let class = env.get_object_class(activity)?;
+
+        println!("Actual Activity class: {:?}", class);
+
+        let method = env.get_method_id(class, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;")?;
+
+        println!("Activity method: {:?}", method);
+
+        let audio_manager = get_system_service(
+            &env, activity,
+            Context::AUDIO_SERVICE,
+        )?;
+
+        println!("audio manager: {:?}", audio_manager);
+
+        let sample_rate = get_property(
+            &env, audio_manager,
+            AudioManager::PROPERTY_OUTPUT_SAMPLE_RATE
+        )?;
+
+        println!("sample rate: {:?}", sample_rate.to_str());
+
+        let frames_per_burst = get_property(
+            &env, audio_manager,
+            AudioManager::PROPERTY_OUTPUT_FRAMES_PER_BUFFER
+        )?;
+
+        Ok((
+            (*sample_rate).to_str().ok().and_then(|s| s.parse().ok()),
+            (*frames_per_burst).to_str().ok().and_then(|s| s.parse().ok()),
+        ))
+    })
 }
 
-fn try_request_devices_info(vm: &JavaVM, activity: JObject) -> JResult<Vec<AudioDeviceInfo>> {
-    let env = vm.attach_current_thread()?;
+fn try_request_devices_info(activity: &NativeActivity) -> JResult<Vec<AudioDeviceInfo>> {
+    let vm = Arc::new(activity.vm());
+    let activity = activity.activity();
+    let exec = Executor::new(vm);
 
-    let audio_manager = get_system_service(
-        &env, activity,
-        Context::AUDIO_SERVICE,
-    )?;
+    exec.with_attached(|env| {
+        let audio_manager = get_system_service(
+            &env, activity,
+            Context::AUDIO_SERVICE,
+        )?;
 
-    let devices = AudioManager::get_devices(
-        &env, audio_manager,
-        AudioManager::GET_DEVICES_ALL,
-    )?;
+        let devices = AudioManager::get_devices(
+            &env, audio_manager,
+            AudioManager::GET_DEVICES_ALL,
+        )?;
 
-    devices.iter()?.map(|device| Ok(AudioDeviceInfo {
-        id: call_method_no_args_ret_int(&env, device, "getId")?,
-        address: call_method_no_args_ret_string(&env, device, "getAddress")?,
-        product_name: call_method_no_args_ret_char_sequence(&env, device, "getProductName")?,
-        device_type: FromPrimitive::from_i32(call_method_no_args_ret_int(&env, device, "getType")?).unwrap(),
-        is_sink: call_method_no_args_ret_bool(&env, device, "isSink")?,
-        is_source: call_method_no_args_ret_bool(&env, device, "isSource")?,
-        channel_counts: call_method_no_args_ret_int_list(&env, device, "getChannelCounts")?,
-        sample_rates: call_method_no_args_ret_int_list(&env, device, "getSampleRates")?,
-        formats: call_method_no_args_ret_int_list(&env, device, "getEncodings")?
-            .into_iter()
-            .map(AudioFormat::to_format)
-            .filter(Option::is_some)
-            .map(Option::unwrap)
-            .collect::<Vec<_>>(),
-    })).collect::<Result<Vec<_>, _>>()
+        devices.iter()?.map(|device| Ok(AudioDeviceInfo {
+            id: call_method_no_args_ret_int(&env, device, "getId")?,
+            address: call_method_no_args_ret_string(&env, device, "getAddress")?,
+            product_name: call_method_no_args_ret_char_sequence(&env, device, "getProductName")?,
+            device_type: FromPrimitive::from_i32(call_method_no_args_ret_int(&env, device, "getType")?).unwrap(),
+            is_sink: call_method_no_args_ret_bool(&env, device, "isSink")?,
+            is_source: call_method_no_args_ret_bool(&env, device, "isSource")?,
+            channel_counts: call_method_no_args_ret_int_list(&env, device, "getChannelCounts")?,
+            sample_rates: call_method_no_args_ret_int_list(&env, device, "getSampleRates")?,
+            formats: call_method_no_args_ret_int_list(&env, device, "getEncodings")?
+                .into_iter()
+                .map(AudioFormat::to_format)
+                .filter(Option::is_some)
+                .map(Option::unwrap)
+                .collect::<Vec<_>>(),
+        })).collect::<Result<Vec<_>, _>>()
+    })
 }
 
-fn call_method_no_args_ret_int_list<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, subject: JObject, name: &str) -> JResult<Vec<i32>> {
-    JList::from_env(env, env.call_method(
+fn call_method_no_args_ret_int_list<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<Vec<i32>> {
+    env.get_list(env.call_method(
         subject,
         name,
         "()[I",
@@ -272,7 +295,7 @@ fn call_method_no_args_ret_int_list<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, 
     }).collect::<Result<Vec<_>, _>>()
 }
 
-fn call_method_no_args_ret_int<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, subject: JObject, name: &str) -> JResult<i32> {
+fn call_method_no_args_ret_int<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<i32> {
     env.call_method(
         subject,
         name,
@@ -281,7 +304,7 @@ fn call_method_no_args_ret_int<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, subje
     )?.i()
 }
 
-fn call_method_no_args_ret_bool<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, subject: JObject, name: &str) -> JResult<bool> {
+fn call_method_no_args_ret_bool<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<bool> {
     env.call_method(
         subject,
         name,
@@ -290,7 +313,7 @@ fn call_method_no_args_ret_bool<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, subj
     )?.z()
 }
 
-fn call_method_no_args_ret_string<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, subject: JObject, name: &str) -> JResult<String> {
+fn call_method_no_args_ret_string<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<String> {
     env.get_string(
         env.call_method(
             subject,
@@ -301,7 +324,7 @@ fn call_method_no_args_ret_string<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, su
     ).map(String::from)
 }
 
-fn call_method_no_args_ret_char_sequence<'a, E: Deref<Target = JNIEnv<'a>>>(env: &E, subject: JObject, name: &str) -> JResult<String> {
+fn call_method_no_args_ret_char_sequence<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<String> {
     env.get_string(
         env.call_method(
             env.call_method(
