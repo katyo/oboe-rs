@@ -5,22 +5,24 @@ crate ?= oboe-sys
 conf ?= release
 
 arch = $(firstword $(subst -, ,$(1)))
-out = $(firstword $(shell ls -t ../target/$(1)/$(conf)/build/$(crate)-*/out/$(2)))
+outpath = ../target/$(1)/$(conf)/build/$(crate)-*/out/$(2)
+out = $(if $(wildcard $(call outpath,$(1),$(2))),$(firstword $(shell ls -t $(call outpath,$(1),$(2)))))
 
 define copy-target-rs
 copy-out: copy-out-$(1)
 copy-out-$(1):
 ifneq ($(call out,$(1)),)
-	@cp $(call out,$(1),bindings.rs) src/bindings_$(call arch,$(1)).rs
-	@cp $(call out,$(1),build/$(lib)/lib$(lib).a) lib/lib$(lib)_$(call arch,$(1)).a
-	@cp $(call out,$(1),build/lib$(lib)-ext.a) lib/lib$(lib)-ext_$(call arch,$(1)).a
+	$(if $(call out,$(1),bindings.rs),@cp $(call out,$(1),bindings.rs) src/bindings_$(call arch,$(1)).rs)
+	@mkdir -p lib/$(conf)/$(call arch,$(1))
+	$(if $(call out,$(1),build/lib$(lib)-ext.so),@cp $(call out,$(1),build/lib$(lib)-ext.so) lib/$(conf)/$(call arch,$(1))/lib$(lib)-ext.so)
 else
 	@echo No prebuild outputs for target:$(1) and config:$(conf)
 endif
 show-out: show-out-$(1)
 show-out-$(1):
 ifneq ($(call out,$(1)),)
-	@ls -al $(call out,$(1),bindings.rs) $(call out,$(1),build/$(lib)/lib$(lib).a) $(call out,$(1),build/lib$(lib)-ext.a)
+	$(if $(call out,$(1),bindings.rs),@ls -al $(call out,$(1),bindings.rs))
+	$(if $(call out,$(1),build/lib$(lib)-ext.so),@ls -al $(call out,$(1),build/lib$(lib)-ext.so))
 else
 	@echo No prebuild outputs for target:$(1) and config:$(conf)
 endif

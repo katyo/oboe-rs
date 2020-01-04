@@ -43,12 +43,12 @@ fn main() {
         let oboe_ext = Path::new("oboe-ext");
 
         #[cfg(feature = "compile-library")]
-        let (lib_dirs, libs) = { // compiling oboe library and binding extensions
+        let (lib_dirs, libs, dylibs) = { // compiling oboe library and binding extensions
             compile_library(&oboe_src, &oboe_ext)
         };
 
         #[cfg(not(feature = "compile-library"))]
-        let (lib_dirs, libs) = {
+        let (lib_dirs, libs, dylibs) = {
             let target_arch = env::var("CARGO_CFG_TARGET_ARCH")
                 .expect("CARGO_CFG_TARGET_ARCH is set by cargo.");
 
@@ -57,9 +57,13 @@ fn main() {
 
             let lib_arch = rustc_target(&target_arch);
 
+            let lib_conf = env::var("PROFILE")
+                .expect("PROFILE is set by cargo.");
+
             (
-                &[format!("{}/lib", lib_path)],
-                &[format!("oboe_{}", lib_arch), format!("oboe-ext_{}", lib_arch)]
+                &[format!("{}/lib/{}/{}", lib_path, lib_conf, lib_arch)],
+                &[] as &[&str],
+                &["oboe-ext", "c++_shared"],
             )
         };
 
@@ -70,11 +74,6 @@ fn main() {
         for lib in libs {
             println!("cargo:rustc-link-lib=static={}", lib);
         }
-
-        let dylibs = &[
-            "log",
-            "OpenSLES",
-        ];
 
         for dylib in dylibs {
             println!("cargo:rustc-link-lib={}", dylib);
@@ -90,23 +89,23 @@ fn main() {
 }
 
 #[cfg(all(feature = "compile-library", feature = "cmake"))]
-fn compile_library(oboe_src: &Path, oboe_ext: &Path) -> (Vec<String>, Vec<String>) {
+fn compile_library(oboe_src: &Path, oboe_ext: &Path) -> (Vec<String>, Vec<String>, Vec<String>) {
     let library = cmake::Config::new(oboe_ext)
         .define("OBOE_DIR", oboe_src)
-        //.cflag("-fPIC")
-        //.cxxflag("-fno-use-cxa-atexit")
         .always_configure(true)
         .very_verbose(true)
+        .build_target("all")
         .build();
     let lib_out = library.display();
     (
-        vec![format!("{}/build", lib_out), format!("{}/build/oboe", lib_out)],
-        vec!["oboe".into(), "oboe-ext".into()],
+        vec![format!("{}/build", lib_out)/*, format!("{}/build/oboe", lib_out)*/],
+        vec![], //vec!["oboe".into(), "oboe-ext".into()],
+        vec!["oboe-ext".into(), "c++_shared".into()],
     )
 }
 
 #[cfg(all(feature = "compile-library", feature = "cc"))]
-fn compile_library(oboe_src: &Path, oboe_ext: &Path) -> (Vec<String>, Vec<String>) {
+fn compile_library(oboe_src: &Path, oboe_ext: &Path) -> (Vec<String>, Vec<String>, Vec<String>) {
     let oboe_include_dir = oboe_src.join("include");
     let oboe_ext_include_dir = oboe_ext.join("include");
 
@@ -199,9 +198,11 @@ fn compile_library(oboe_src: &Path, oboe_ext: &Path) -> (Vec<String>, Vec<String
         .files(oboe_ext_sources.iter().map(|file| {
             oboe_ext_source_dir.join(file)
         }))
+        //.shared_flag(true)
         .compile("oboe-ext");
 
     (
+        vec![],
         vec![],
         vec![],
     )
@@ -292,6 +293,7 @@ fn generate_bindings(oboe_src: &Path, oboe_ext: &Path, out_file: &Path) {
         .whitelist_type("oboe::Version")
         .whitelist_function("oboe::AudioStreamBuilder_.+")
         .whitelist_function("oboe::AudioStream_.+")
+        .whitelist_function("oboe::AudioStreamCallbackWrapper_.+")
         .whitelist_function("oboe::getSdkVersion")
         //.blacklist_type("std_.*")
         .generate()
