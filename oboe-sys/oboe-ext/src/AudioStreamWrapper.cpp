@@ -1,10 +1,12 @@
 #include "oboe/OboeExt.h"
 
+// !!!!!!!!!!!!!! DIRTY HACK !!!!!!!!!!!!!
+/*extern "C" {
+  void *__dso_handle __attribute__((weak));
+}*/
+
 namespace oboe {
   void AudioStream_delete(AudioStream *oboeStream) {
-    if (oboeStream) {
-      oboeStream->close();
-    }
     delete oboeStream;
   }
 

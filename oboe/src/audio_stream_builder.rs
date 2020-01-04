@@ -1,6 +1,7 @@
 use std::{
     marker::PhantomData,
-    mem::MaybeUninit,
+    mem::{MaybeUninit},
+    ops::{Deref, DerefMut},
     fmt,
 };
 use num_traits::{FromPrimitive};
@@ -36,12 +37,41 @@ use super::{
     audio_stream_base_fmt,
 };
 
+#[repr(transparent)]
+struct AudioStreamBuilderHandle(*mut ffi::oboe_AudioStreamBuilder);
+
+impl Default for AudioStreamBuilderHandle {
+    fn default() -> Self {
+        Self(unsafe { ffi::oboe_AudioStreamBuilder_new() })
+    }
+}
+
+impl Drop for AudioStreamBuilderHandle {
+    fn drop(&mut self) {
+        unsafe { ffi::oboe_AudioStreamBuilder_delete(self.0) }
+    }
+}
+
+impl Deref for AudioStreamBuilderHandle {
+    type Target = ffi::oboe_AudioStreamBuilder;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &(*self.0) }
+    }
+}
+
+impl DerefMut for AudioStreamBuilderHandle {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut (*self.0) }
+    }
+}
+
 /**
  * Factory for an audio stream.
  */
 #[repr(transparent)]
 pub struct AudioStreamBuilder<D, C, T> {
-    raw: ffi::oboe_AudioStreamBuilder,
+    raw: AudioStreamBuilderHandle,
     _phantom: PhantomData<(D, C, T)>,
 }
 
@@ -53,41 +83,48 @@ impl<D, C, T> fmt::Debug for AudioStreamBuilder<D, C, T> {
 
 impl<D, C, T> RawAudioStreamBase for AudioStreamBuilder<D, C, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &self.raw._base
+        &(*self.raw)._base
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut self.raw._base
+        &mut (*self.raw)._base
     }
 }
 
-impl AudioStreamBuilder<Output, Unspecified, Unspecified> {
+impl Default for AudioStreamBuilder<Output, Unspecified, Unspecified> {
     /**
      * Create new audio stream builder
      */
-    pub fn new() -> Self {
-        let mut raw = MaybeUninit::uninit();
-
+    fn default() -> Self {
         Self {
-            raw: unsafe {
-                ffi::oboe_AudioStreamBuilder_new(raw.as_mut_ptr());
-                raw.assume_init()
-            },
+            raw: Default::default(),
             _phantom: PhantomData,
         }
     }
 }
 
+impl<D, C, T> Into<AudioStreamBuilderHandle> for AudioStreamBuilder<D, C, T> {
+    fn into(self) -> AudioStreamBuilderHandle {
+        let Self { raw, .. }  = self;
+        raw
+    }
+}
+
 impl<D, C, T> AudioStreamBuilder<D, C, T> {
+    fn convert<D1, C1, T1>(self) -> AudioStreamBuilder<D1, C1, T1> {
+        AudioStreamBuilder { raw: self.into(), _phantom: PhantomData }
+    }
+
     /**
      * Request a specific number of channels.
      *
      * Default is ChannelCount::Unspecified. If the value is unspecified then
      * the application should query for the actual value after the stream is opened.
      */
-    pub fn set_channel_count<X: IsChannelCount>(mut self) -> AudioStreamBuilder<D, X, T> {
-        self.raw._base.mChannelCount = X::CHANNEL_COUNT as i32;
-        AudioStreamBuilder { raw: self.raw, _phantom: PhantomData }
+    pub fn set_channel_count<X: IsChannelCount>(self) -> AudioStreamBuilder<D, X, T> {
+        let mut builder = self.convert();
+        builder._raw_base_mut().mChannelCount = X::CHANNEL_COUNT as i32;
+        builder
     }
 
     pub fn set_mono(self) -> AudioStreamBuilder<D, Mono, T> {
@@ -103,9 +140,10 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * @param direction Direction::Output or Direction::Input
      */
-    pub fn set_direction<X: IsDirection>(mut self) -> AudioStreamBuilder<X, C, T> {
-        self.raw._base.mDirection = X::DIRECTION as i32;
-        AudioStreamBuilder { raw: self.raw, _phantom: PhantomData }
+    pub fn set_direction<X: IsDirection>(self) -> AudioStreamBuilder<X, C, T> {
+        let mut builder = self.convert();
+        builder._raw_base_mut().mDirection = X::DIRECTION as i32;
+        builder
     }
 
     pub fn set_input(self) -> AudioStreamBuilder<Input, C, T> {
@@ -127,8 +165,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * But it is traditionally called "sample rate". Se we use that term.
      *
      */
-    pub fn set_sample_rate(&mut self, sample_rate: i32) -> &mut Self {
-        self.raw._base.mSampleRate = sample_rate;
+    pub fn set_sample_rate(mut self, sample_rate: i32) -> Self {
+        self._raw_base_mut().mSampleRate = sample_rate;
         self
     }
 
@@ -146,8 +184,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * @param frames_per_callback
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_frames_per_callback(&mut self, frames_per_callback: i32) -> &mut Self {
-        self.raw._base.mFramesPerCallback = frames_per_callback;
+    pub fn set_frames_per_callback(mut self, frames_per_callback: i32) -> Self {
+        self._raw_base_mut().mFramesPerCallback = frames_per_callback;
         self
     }
 
@@ -157,9 +195,10 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * Default is Format::Unspecified. If the value is unspecified then
      * the application should query for the actual value after the stream is opened.
      */
-    pub fn set_format<X: IsFormat>(mut self) -> AudioStreamBuilder<D, C, X> {
-        self.raw._base.mFormat = X::FORMAT as i32;
-        AudioStreamBuilder { raw: self.raw, _phantom: PhantomData }
+    pub fn set_format<X: IsFormat>(self) -> AudioStreamBuilder<D, C, X> {
+        let mut builder = self.convert();
+        builder._raw_base_mut().mFormat = X::FORMAT as i32;
+        builder
     }
 
     pub fn set_i16(self) -> AudioStreamBuilder<D, C, i16> {
@@ -182,8 +221,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * @param bufferCapacityInFrames the desired buffer capacity in frames or kUnspecified
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_buffer_capacity_in_frames(&mut self, buffer_capacity_in_frames: i32) -> &mut Self {
-        self.raw._base.mBufferCapacityInFrames = buffer_capacity_in_frames;
+    pub fn set_buffer_capacity_in_frames(mut self, buffer_capacity_in_frames: i32) -> Self {
+        self._raw_base_mut().mBufferCapacityInFrames = buffer_capacity_in_frames;
         self
     }
 
@@ -198,7 +237,7 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * @return the requested audio API
      */
     pub fn get_audio_api(&self) -> AudioApi {
-        FromPrimitive::from_i32(self.raw.mAudioApi).unwrap()
+        FromPrimitive::from_i32((*self.raw).mAudioApi).unwrap()
     }
 
     /**
@@ -214,8 +253,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * @param audioApi Must be AudioApi::Unspecified, AudioApi::OpenSLES or AudioApi::AAudio.
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_audio_api(&mut self, audio_api: AudioApi) -> &mut Self {
-        self.raw.mAudioApi = audio_api as i32;
+    pub fn set_audio_api(mut self, audio_api: AudioApi) -> Self {
+        (*self.raw).mAudioApi = audio_api as i32;
         self
     }
 
@@ -250,16 +289,16 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * @param sharingMode SharingMode::Shared or SharingMode::Exclusive
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_sharing_mode(&mut self, sharing_mode: SharingMode) -> &mut Self {
-        self.raw._base.mSharingMode = sharing_mode as i32;
+    pub fn set_sharing_mode(mut self, sharing_mode: SharingMode) -> Self {
+        self._raw_base_mut().mSharingMode = sharing_mode as i32;
         self
     }
 
-    pub fn set_shared(&mut self) -> &mut Self {
+    pub fn set_shared(self) -> Self {
         self.set_sharing_mode(SharingMode::Shared)
     }
 
-    pub fn set_exclusive(&mut self) -> &mut Self {
+    pub fn set_exclusive(self) -> Self {
         self.set_sharing_mode(SharingMode::Exclusive)
     }
 
@@ -271,8 +310,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * @param performanceMode for example, PerformanceMode::LowLatency
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_performance_mode(&mut self, performance_mode: PerformanceMode) -> &mut Self {
-        self.raw._base.mPerformanceMode = performance_mode as i32;
+    pub fn set_performance_mode(mut self, performance_mode: PerformanceMode) -> Self {
+        self._raw_base_mut().mPerformanceMode = performance_mode as i32;
         self
     }
 
@@ -288,8 +327,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * @param usage the desired usage, eg. Usage::Game
      */
-    pub fn set_usage(&mut self, usage: Usage) -> &mut Self {
-        self.raw._base.mUsage = usage as i32;
+    pub fn set_usage(mut self, usage: Usage) -> Self {
+        self._raw_base_mut().mUsage = usage as i32;
         self
     }
 
@@ -305,8 +344,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * @param contentType the type of audio data, eg. ContentType::Speech
      */
-    pub fn set_content_type(&mut self, content_type: ContentType) -> &mut Self {
-        self.raw._base.mContentType = content_type as i32;
+    pub fn set_content_type(mut self, content_type: ContentType) -> Self {
+        self._raw_base_mut().mContentType = content_type as i32;
         self
     }
 
@@ -325,8 +364,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * @param inputPreset the desired configuration for recording
      */
-    pub fn set_input_preset(&mut self, input_preset: InputPreset) -> &mut Self {
-        self.raw._base.mInputPreset = input_preset as i32;
+    pub fn set_input_preset(mut self, input_preset: InputPreset) -> Self {
+        self._raw_base_mut().mInputPreset = input_preset as i32;
         self
     }
 
@@ -355,8 +394,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * @param sessionId an allocated sessionID or SessionId::Allocate
      */
-    pub fn set_session_id(&mut self, session_id: SessionId) -> &mut Self {
-        self.raw._base.mSessionId = session_id as i32;
+    pub fn set_session_id(mut self, session_id: SessionId) -> Self {
+        self._raw_base_mut().mSessionId = session_id as i32;
         self
     }
 
@@ -378,8 +417,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * @param deviceId device identifier or kUnspecified
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_device_id(&mut self, device_id: i32) -> &mut Self {
-        self.raw._base.mDeviceId = device_id;
+    pub fn set_device_id(mut self, device_id: i32) -> Self {
+        self._raw_base_mut().mDeviceId = device_id;
         self
     }
 
@@ -392,8 +431,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * Default is true.
      */
-    pub fn set_channel_conversion_allowed(&mut self, allowed: bool) -> &mut Self {
-        self.raw._base.mChannelConversionAllowed = allowed;
+    pub fn set_channel_conversion_allowed(mut self, allowed: bool) -> Self {
+        self._raw_base_mut().mChannelConversionAllowed = allowed;
         self
     }
 
@@ -404,8 +443,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * Default is true.
      */
-    pub fn set_format_conversion_allowed(&mut self, allowed: bool) -> &mut Self {
-        self.raw._base.mFormatConversionAllowed = allowed;
+    pub fn set_format_conversion_allowed(mut self, allowed: bool) -> Self {
+        self._raw_base_mut().mFormatConversionAllowed = allowed;
         self
     }
 
@@ -420,8 +459,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * Default is SampleRateConversionQuality::None
      */
-    pub fn set_sample_rate_conversion_quality(&mut self, quality: SampleRateConversionQuality) -> &mut Self {
-        self.raw._base.mSampleRateConversionQuality = quality as i32;
+    pub fn set_sample_rate_conversion_quality(mut self, quality: SampleRateConversionQuality) -> Self {
+        self._raw_base_mut().mSampleRateConversionQuality = quality as i32;
         self
     }
 
@@ -429,8 +468,9 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * @return true if AAudio will be used based on the current settings.
      */
     pub fn will_use_aaudio(&self) -> bool {
-        (self.raw.mAudioApi == (AudioApi::AAudio as i32) && Self::is_aaudio_supported()) ||
-            (self.raw.mAudioApi == (AudioApi::Unspecified as i32) && Self::is_aaudio_recommended())
+        let audio_api = self.get_audio_api();
+        (audio_api == AudioApi::AAudio && Self::is_aaudio_supported()) ||
+        (audio_api == AudioApi::Unspecified && Self::is_aaudio_recommended())
     }
 }
 
@@ -443,12 +483,13 @@ impl<D: IsDirection, C: IsChannelCount, T: IsFormat> AudioStreamBuilder<D, C, T>
      * @param stream pointer to a variable to receive the stream address
      * @return OBOE_OK if successful or a negative error code
      */
-    pub fn open_stream(mut self) -> Result<AudioStreamSync<D, (T, C)>> {
+    pub fn open_stream(self) -> Result<AudioStreamSync<D, (T, C)>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
+        let Self { mut raw, .. } = self;
 
         wrap_status(unsafe {
             ffi::oboe_AudioStreamBuilder_openStream(
-                &mut self.raw,
+                &mut *raw,
                 stream.as_mut_ptr(),
             )
         }).map(|_| AudioStreamSync::wrap_raw(
@@ -479,14 +520,17 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Input, C, T> {
      * @param streamCallback
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_callback<F>(mut self, stream_callback: F) -> AudioStreamBuilderAsync<Input, F>
+    pub fn set_callback<F>(self, stream_callback: F) -> AudioStreamBuilderAsync<Input, F>
     where
         F: AudioInputCallback<FrameType = (T, C)>,
         (T, C): IsFrameType,
     {
-        let callback = AudioCallbackWrapper::<Input, F>::wrap(stream_callback);
-        self.raw._base.mStreamCallback = &callback.raw_callback() as *const _ as *mut _;
-        AudioStreamBuilderAsync { raw: self.raw, callback, _phantom: PhantomData }
+        let mut callback = AudioCallbackWrapper::<Input, F>::wrap(stream_callback);
+        let Self { mut raw, .. } = self;
+        unsafe {
+            ffi::oboe_AudioStreamBuilder_setCallback(&mut *raw, callback.raw_callback());
+        }
+        AudioStreamBuilderAsync { raw, callback, _phantom: PhantomData }
     }
 }
 
@@ -512,14 +556,17 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
      * @param streamCallback
      * @return pointer to the builder so calls can be chained
      */
-    pub fn set_callback<F>(mut self, stream_callback: F) -> AudioStreamBuilderAsync<Output, F>
+    pub fn set_callback<F>(self, stream_callback: F) -> AudioStreamBuilderAsync<Output, F>
     where
         F: AudioOutputCallback<FrameType = (T, C)>,
         (T, C): IsFrameType,
     {
-        let callback = AudioCallbackWrapper::<Output, F>::wrap(stream_callback);
-        self.raw._base.mStreamCallback = &callback.raw_callback() as *const _ as *mut _;
-        AudioStreamBuilderAsync { raw: self.raw, callback, _phantom: PhantomData }
+        let mut callback = AudioCallbackWrapper::<Output, F>::wrap(stream_callback);
+        let Self { mut raw, .. } = self;
+        unsafe {
+            ffi::oboe_AudioStreamBuilder_setCallback(&mut *raw, callback.raw_callback());
+        }
+        AudioStreamBuilderAsync { raw, callback, _phantom: PhantomData }
     }
 }
 
@@ -527,7 +574,7 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
  * Factory for an audio stream.
  */
 pub struct AudioStreamBuilderAsync<D, F> {
-    raw: ffi::oboe_AudioStreamBuilder,
+    raw: AudioStreamBuilderHandle,
     callback: AudioCallbackWrapper<D, F>,
     _phantom: PhantomData<(D, F)>,
 }
@@ -540,11 +587,11 @@ impl<D, F> fmt::Debug for AudioStreamBuilderAsync<D, F> {
 
 impl<D, F> RawAudioStreamBase for AudioStreamBuilderAsync<D, F> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &self.raw._base
+        &(*self.raw)._base
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut self.raw._base
+        &mut (*self.raw)._base
     }
 }
 
@@ -557,17 +604,18 @@ impl<F: AudioInputCallback + Send> AudioStreamBuilderAsync<Input, F> {
      * @param stream pointer to a variable to receive the stream address
      * @return OBOE_OK if successful or a negative error code
      */
-    pub fn open_stream(mut self) -> Result<AudioStreamAsync<Input, F>> {
+    pub fn open_stream(self) -> Result<AudioStreamAsync<Input, F>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
+        let Self { mut raw, callback, .. } = self;
 
         wrap_status(unsafe {
             ffi::oboe_AudioStreamBuilder_openStream(
-                &mut self.raw,
+                &mut *raw,
                 stream.as_mut_ptr(),
             )
         }).map(|_| AudioStreamAsync::wrap_raw(
             unsafe { stream.assume_init() },
-            self.callback,
+            callback,
         ))
     }
 }
@@ -581,17 +629,18 @@ impl<F: AudioOutputCallback + Send> AudioStreamBuilderAsync<Output, F> {
      * @param stream pointer to a variable to receive the stream address
      * @return OBOE_OK if successful or a negative error code
      */
-    pub fn open_stream(mut self) -> Result<AudioStreamAsync<Output, F>> {
+    pub fn open_stream(self) -> Result<AudioStreamAsync<Output, F>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
+        let Self { mut raw, callback, .. } = self;
 
         wrap_status(unsafe {
             ffi::oboe_AudioStreamBuilder_openStream(
-                &mut self.raw,
+                &mut *raw,
                 stream.as_mut_ptr(),
             )
         }).map(|_| AudioStreamAsync::wrap_raw(
             unsafe { stream.assume_init() },
-            self.callback,
+            callback,
         ))
     }
 }

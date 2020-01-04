@@ -110,14 +110,12 @@ pub enum DataCallbackResult {
 }
 
 /**
- * FIXME:
- * The result of an operation. All except the `OK` result indicates that an error occurred.
- * The `Result` can be converted into a human readable string using `convertToText`.
+ * The result of an operation with value
  */
 pub type Result<T> = result::Result<T, Error>;
 
 /**
- * The result without value
+ * The result of operation without value
  */
 pub type Status = Result<()>;
 
@@ -137,6 +135,9 @@ pub(crate) fn wrap_result<T>(result: ffi::oboe_ResultWithValue<T>) -> Result<T> 
     }
 }
 
+/**
+ * The error of an operation.
+ */
 #[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 pub enum Error {
@@ -477,7 +478,10 @@ pub enum ChannelCount {
 }
 
 /**
- * On API 16 to 26 OpenSL ES will be used. When using OpenSL ES the optimal values for `sample_rate` and
+ * The default (optimal) audio streaming values.
+ *
+ * On API 16 to 26 OpenSL ES will be used.
+ * When using OpenSL ES the optimal values for `sample_rate` and
  * `frames_per_burst` are not known by the native code.
  * On API 17+ these values should be obtained from the AudioManager using this code:
  *

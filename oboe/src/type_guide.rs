@@ -4,14 +4,23 @@ use super::{
     ChannelCount,
 };
 
+/**
+ * Unspecified marker type for use everywhere
+ */
 pub struct Unspecified;
 
+/**
+ * The trait for direction marker types
+ */
 pub trait IsDirection {
     const DIRECTION: Direction;
     // type BufferType<T: IsFrameType>;
     // ^unstable feature
 }
 
+/**
+ * The input direction marker
+ */
 pub struct Input;
 
 impl IsDirection for Input {
@@ -20,6 +29,9 @@ impl IsDirection for Input {
     // ^unstable feature
 }
 
+/**
+ * The output direction marker
+ */
 pub struct Output;
 
 impl IsDirection for Output {
@@ -28,6 +40,9 @@ impl IsDirection for Output {
     // ^unstable feature
 }
 
+/**
+ * The traint for format marker types
+ */
 pub trait IsFormat {
     const FORMAT: AudioFormat;
 }
@@ -44,6 +59,9 @@ impl IsFormat for f32 {
     const FORMAT: AudioFormat = AudioFormat::F32;
 }
 
+/**
+ * The trait for channel count marker types
+ */
 pub trait IsChannelCount {
     const CHANNEL_COUNT: ChannelCount;
 }
@@ -52,12 +70,18 @@ impl IsChannelCount for Unspecified {
     const CHANNEL_COUNT: ChannelCount = ChannelCount::Unspecified;
 }
 
+/**
+ * The single mono channel configuration marker
+ */
 pub struct Mono;
 
 impl IsChannelCount for Mono {
     const CHANNEL_COUNT: ChannelCount = ChannelCount::Mono;
 }
 
+/**
+ * The dual stereo channels configuration marker
+ */
 pub struct Stereo;
 
 impl IsChannelCount for Stereo {
@@ -69,6 +93,9 @@ pub enum AltFrame<T: IsFormat> {
     Stereo(T, T),
 }
 
+/**
+ * The trait for frame type marker types
+ */
 pub trait IsFrameType {
     type Type;
     type Format: IsFormat;
@@ -81,41 +108,14 @@ impl<T: IsFormat> IsFrameType for (T, Unspecified) {
     type ChannelCount = Unspecified;
 }
 
-/*impl<T: IsFormat> IsFormat for (T, Unspecified) {
-    const FORMAT: AudioFormat = <T as IsFormat>::FORMAT;
-}
-
-impl<T> IsChannelCount for (T, Unspecified) {
-    const CHANNEL_COUNT: ChannelCount = ChannelCount::Unspecified;
-}*/
-
 impl<T: IsFormat> IsFrameType for (T, Mono) {
     type Type = T;
     type Format = T;
     type ChannelCount = Mono;
 }
 
-/*
-impl<T: IsFormat> IsFormat for (T, Mono) {
-    const FORMAT: AudioFormat = <T as IsFormat>::FORMAT;
-}
-
-impl<T> IsChannelCount for (T, Mono) {
-    const CHANNEL_COUNT: ChannelCount = ChannelCount::Mono;
-}
-*/
-
 impl<T: IsFormat> IsFrameType for (T, Stereo) {
     type Type = (T, T);
     type Format = T;
     type ChannelCount = Stereo;
 }
-
-/*impl<T: IsFormat> IsFormat for (T, Stereo) {
-    const FORMAT: AudioFormat = <T as IsFormat>::FORMAT;
-}
-
-impl<T> IsChannelCount for (T, Stereo) {
-    const CHANNEL_COUNT: ChannelCount = ChannelCount::Stereo;
-}
-*/

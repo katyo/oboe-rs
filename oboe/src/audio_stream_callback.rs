@@ -4,6 +4,7 @@ use std::{
         from_raw_parts,
         from_raw_parts_mut,
     },
+    ops::{Deref, DerefMut},
     ffi::c_void,
 };
 
@@ -237,15 +238,50 @@ pub trait AudioOutputCallback {
                       audio_data: &mut [<Self::FrameType as IsFrameType>::Type]) -> DataCallbackResult;
 }
 
+#[repr(transparent)]
+struct AudioStreamCallbackWrapperHandle(*mut ffi::oboe_AudioStreamCallbackWrapper);
+
+impl AudioStreamCallbackWrapperHandle {
+    fn new(audio_ready: ffi::oboe_AudioReadyHandler,
+           before_close: ffi::oboe_ErrorCloseHandler,
+           after_close: ffi::oboe_ErrorCloseHandler) -> Self {
+        Self(unsafe { ffi::oboe_AudioStreamCallbackWrapper_new(
+            audio_ready,
+            before_close,
+            after_close,
+        ) })
+    }
+}
+
+impl Drop for AudioStreamCallbackWrapperHandle {
+    fn drop(&mut self) {
+        unsafe { ffi::oboe_AudioStreamCallbackWrapper_delete(self.0) }
+    }
+}
+
+impl Deref for AudioStreamCallbackWrapperHandle {
+    type Target = ffi::oboe_AudioStreamCallbackWrapper;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &(*self.0) }
+    }
+}
+
+impl DerefMut for AudioStreamCallbackWrapperHandle {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut (*self.0) }
+    }
+}
+
 pub(crate) struct AudioCallbackWrapper<D, T> {
-    raw: ffi::oboe_AudioStreamCallbackWrapper,
-    callback: T,
+    raw: AudioStreamCallbackWrapperHandle,
+    callback: Box<T>,
     _phantom: PhantomData<D>,
 }
 
 impl<D, T> AudioCallbackWrapper<D, T> {
-    pub(crate) fn raw_callback(&self) -> &ffi::oboe_AudioStreamCallbackWrapper {
-        &self.raw
+    pub(crate) fn raw_callback(&mut self) -> &mut ffi::oboe_AudioStreamCallbackWrapper {
+        &mut *self.raw
     }
 }
 
@@ -254,20 +290,19 @@ where
     T: AudioInputCallback,
 {
     pub(crate) fn wrap(callback: T) -> Self {
+        let callback = Box::new(callback);
         let mut wrapper = Self {
-            raw: unsafe {
-                ffi::oboe_AudioStreamCallbackWrapper::new(
-                    Some(on_audio_ready_input_wrapper::<T>),
-                    Some(on_error_before_close_input_wrapper::<T>),
-                    Some(on_error_after_close_input_wrapper::<T>),
-                )
-            },
+            raw: AudioStreamCallbackWrapperHandle::new(
+                Some(on_audio_ready_input_wrapper::<T>),
+                Some(on_error_before_close_input_wrapper::<T>),
+                Some(on_error_after_close_input_wrapper::<T>),
+            ),
             callback,
             _phantom: PhantomData,
         };
-        unsafe {
-            wrapper.raw.setContext(&mut wrapper.callback as *mut _ as *mut c_void);
-        }
+        unsafe { (*wrapper.raw).setContext(
+            &mut (*wrapper.callback) as *mut _ as *mut c_void
+        ); }
         wrapper
     }
 }
@@ -277,20 +312,19 @@ where
     T: AudioOutputCallback,
 {
     pub(crate) fn wrap(callback: T) -> Self {
+        let callback = Box::new(callback);
         let mut wrapper = Self {
-            raw: unsafe {
-                ffi::oboe_AudioStreamCallbackWrapper::new(
-                    Some(on_audio_ready_output_wrapper::<T>),
-                    Some(on_error_before_close_output_wrapper::<T>),
-                    Some(on_error_after_close_output_wrapper::<T>),
-                )
-            },
+            raw: AudioStreamCallbackWrapperHandle::new(
+                Some(on_audio_ready_output_wrapper::<T>),
+                Some(on_error_before_close_output_wrapper::<T>),
+                Some(on_error_after_close_output_wrapper::<T>),
+            ),
             callback,
             _phantom: PhantomData,
         };
-        unsafe {
-            wrapper.raw.setContext(&mut wrapper.callback as *mut _ as *mut c_void);
-        }
+        unsafe { (*wrapper.raw).setContext(
+            &mut (*wrapper.callback) as *mut _ as *mut c_void
+        ); }
         wrapper
     }
 }
@@ -350,6 +384,7 @@ unsafe extern "C" fn on_error_before_close_output_wrapper<T: AudioOutputCallback
     error: ffi::oboe_Result,
 ) {
     let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
+
     let callback = &mut *(context as *mut T);
 
     callback.on_error_before_close(

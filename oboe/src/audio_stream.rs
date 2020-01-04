@@ -2,7 +2,9 @@ use oboe_sys as ffi;
 use std::{
     marker::PhantomData,
     mem::MaybeUninit,
+    ops::{Deref, DerefMut},
     ffi::c_void,
+    ptr::null_mut,
     fmt::{self, Debug},
 };
 use num_traits::FromPrimitive;
@@ -35,8 +37,17 @@ use super::{
     AudioCallbackWrapper,
 };
 
+/**
+ * The default number of nanoseconds to wait for when performing state change operations on the
+ * stream, such as `start` and `stop`.
+ *
+ * @see oboe::AudioStream::start
+ */
 pub const DEFAULT_TIMEOUT_NANOS: i64 = 2000 * NANOS_PER_MILLISECOND;
 
+/**
+ * Base class for Oboe audio stream.
+ */
 pub trait AudioStream: AudioStreamBase {
     /**
      * Open a stream based on the current settings.
@@ -643,6 +654,41 @@ pub(crate) fn audio_stream_fmt<T: AudioStreamBase + AudioStream>(stream: &T, f: 
     '\n'.fmt(f)
 }
 
+#[repr(transparent)]
+struct AudioStreamHandle(*mut ffi::oboe_AudioStream);
+
+impl From<*mut ffi::oboe_AudioStream> for AudioStreamHandle {
+    fn from(raw: *mut ffi::oboe_AudioStream) -> Self {
+        Self(raw)
+    }
+}
+
+impl Default for AudioStreamHandle {
+    fn default() -> Self {
+        Self(null_mut())
+    }
+}
+
+impl Drop for AudioStreamHandle {
+    fn drop(&mut self) {
+        unsafe { ffi::oboe_AudioStream_delete(self.0) }
+    }
+}
+
+impl Deref for AudioStreamHandle {
+    type Target = ffi::oboe_AudioStream;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &(*self.0) }
+    }
+}
+
+impl DerefMut for AudioStreamHandle {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut (*self.0) }
+    }
+}
+
 /**
  * Reference to an audio stream for passing to callbacks
  */
@@ -692,7 +738,7 @@ impl<'s> RawAudioOutputStream for AudioStreamRef<'s, Output> {}
  * An audio stream with callback
  */
 pub struct AudioStreamAsync<D, F> {
-    raw: *mut ffi::oboe_AudioStream,
+    raw: AudioStreamHandle,
 
     #[used]
     callback: AudioCallbackWrapper<D, F>,
@@ -707,33 +753,27 @@ impl<D, F> fmt::Debug for AudioStreamAsync<D, F> {
 impl<D, F> AudioStreamAsync<D, F> {
     pub(crate) fn wrap_raw(raw: *mut ffi::oboe_AudioStream,
                            callback: AudioCallbackWrapper<D, F>) -> Self {
-        Self { raw, callback }
-    }
-}
-
-impl<D, F> Drop for AudioStreamAsync<D, F> {
-    fn drop(&mut self) {
-        unsafe { ffi::oboe_AudioStream_delete(self.raw); }
+        Self { raw: raw.into(), callback }
     }
 }
 
 impl<D, T> RawAudioStreamBase for AudioStreamAsync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &(unsafe { &*self.raw })._base
+        &(&*self.raw)._base
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut (unsafe { &mut *self.raw })._base
+        &mut (&mut *self.raw)._base
     }
 }
 
 impl<D, F> RawAudioStream for AudioStreamAsync<D, F> {
     fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        unsafe { &*self.raw }
+        &*self.raw
     }
 
     fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        unsafe { &mut *self.raw }
+        &mut *self.raw
     }
 }
 
@@ -745,7 +785,7 @@ impl<F> RawAudioOutputStream for AudioStreamAsync<Output, F> {}
  * The audio stream with blocking IO
  */
 pub struct AudioStreamSync<D, F> {
-    raw: *mut ffi::oboe_AudioStream,
+    raw: AudioStreamHandle,
     _phantom: PhantomData<(D, F)>,
 }
 
@@ -757,33 +797,27 @@ impl<D, F> fmt::Debug for AudioStreamSync<D, F> {
 
 impl<D, F> AudioStreamSync<D, F> {
     pub(crate) fn wrap_raw(raw: *mut ffi::oboe_AudioStream) -> Self {
-        Self { raw, _phantom: PhantomData }
-    }
-}
-
-impl<D, F> Drop for AudioStreamSync<D, F> {
-    fn drop(&mut self) {
-        unsafe { ffi::oboe_AudioStream_delete(self.raw); }
+        Self { raw: raw.into(), _phantom: PhantomData }
     }
 }
 
 impl<D, T> RawAudioStreamBase for AudioStreamSync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &(unsafe { &*self.raw })._base
+        &(&*self.raw)._base
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut (unsafe { &mut *self.raw })._base
+        &mut (&mut *self.raw)._base
     }
 }
 
 impl<D, F> RawAudioStream for AudioStreamSync<D, F> {
     fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        unsafe { &*self.raw }
+        &*self.raw
     }
 
     fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        unsafe { &mut *self.raw }
+        &mut *self.raw
     }
 }
 
@@ -799,7 +833,7 @@ impl<F: IsFrameType> AudioInputStreamSync for AudioStreamSync<Input, F> {
             timeout_nanoseconds: i64) -> Result<i32> {
         wrap_result(unsafe {
             ffi::oboe_AudioStream_read(
-                self.raw,
+                &mut *self.raw,
                 buffer.as_mut_ptr() as *mut c_void,
                 buffer.len() as i32,
                 timeout_nanoseconds,
@@ -816,7 +850,7 @@ impl<F: IsFrameType> AudioOutputStreamSync for AudioStreamSync<Output, F> {
              timeout_nanoseconds: i64) -> Result<i32> {
         wrap_result(unsafe {
             ffi::oboe_AudioStream_write(
-                self.raw,
+                &mut *self.raw,
                 buffer.as_ptr() as *const c_void,
                 buffer.len() as i32,
                 timeout_nanoseconds,
