@@ -19,16 +19,12 @@ optional = true
 version = "0.1"
 optional = true
 
-#[build-dependencies.cc]
-#version = "1.0"
-#features = ["parallel"]
-#optional = true
-
 [build-dependencies.bindgen]
 version = "0.52"
 optional = true
 
 [features]
+static-link = []
 generate-bindings = ["bindgen", "git2"]
 compile-library = ["cmake", "git2"]
 rustdoc = []

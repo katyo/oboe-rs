@@ -31,7 +31,7 @@ version = "0.13.1"
 optional = true
 
 [features]
-#defaults = []
+static-link = ["oboe-sys/static-link"]
 generate-bindings = ["oboe-sys/generate-bindings"]
 compile-library = ["oboe-sys/compile-library"]
 java-interface = ["android-ndk", "android_glue", "jni"]

@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.4.1)
 
 project(oboe-ext)
 
-#add_subdirectory(${OBOE_DIR} oboe)
-
 set(oboe-ext_sources
     src/AudioStreamWrapper.cpp
     src/AudioStreamBuilderWrapper.cpp
@@ -64,7 +62,7 @@ set(oboe_sources
 
 list(TRANSFORM oboe_sources PREPEND ${OBOE_DIR}/)
 
-add_library(oboe-ext SHARED ${oboe-ext_sources} ${oboe_sources})
+add_library(oboe-ext ${oboe-ext_sources} ${oboe_sources})
 
 target_include_directories(oboe-ext
     PRIVATE src ${OBOE_DIR}/src
@@ -83,5 +81,3 @@ target_compile_options(oboe-ext
 target_compile_definitions(oboe-ext PUBLIC $<$<CONFIG:DEBUG>:OBOE_ENABLE_LOGGING=1>)
 
 target_link_libraries(oboe-ext PRIVATE log OpenSLES)
-
-#target_link_libraries(oboe-ext PUBLIC oboe)
