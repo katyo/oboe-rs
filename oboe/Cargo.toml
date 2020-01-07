@@ -8,6 +8,7 @@ authors = ["K. <kayo@illumium.org>"]
 license = "Apache-2.0"
 repository = "https://github.com/katyo/oboe-rs"
 edition = "2018"
+include = ["/src/**/*.rs", "/README.md"]
 
 [badges]
 maintenance = { status = "experimental" }
@@ -17,6 +18,7 @@ num-traits = "0.2"
 num-derive = "0.3"
 
 [dependencies.oboe-sys]
+version = "0.1.0"
 path = "../oboe-sys"
 
 [dependencies.android-ndk]
