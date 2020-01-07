@@ -42,16 +42,6 @@ pub struct AudioDeviceInfo {
     pub id: i32,
 
     /**
-     * Device address
-     */
-    pub address: String,
-
-    /**
-     * Device product name
-     */
-    pub product_name: String,
-
-    /**
      * The type of device
      */
     pub device_type: AudioDeviceType,
@@ -60,6 +50,16 @@ pub struct AudioDeviceInfo {
      * The device can be used for playback and/or capture
      */
     pub direction: AudioDeviceDirection,
+
+    /**
+     * Device address
+     */
+    pub address: String,
+
+    /**
+     * Device product name
+     */
+    pub product_name: String,
 
     /**
      * Available channel configurations

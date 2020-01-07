@@ -5,7 +5,7 @@ use std::{
     ops::{Deref, DerefMut},
     ffi::c_void,
     ptr::null_mut,
-    fmt::{self, Debug},
+    fmt::{self, Display},
 };
 use num_traits::FromPrimitive;
 
@@ -636,21 +636,15 @@ impl<T: RawAudioOutputStream + RawAudioStream + RawAudioStreamBase> AudioOutputS
 
 pub(crate) fn audio_stream_fmt<T: AudioStreamBase + AudioStream>(stream: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     audio_stream_base_fmt(stream, f)?;
-    //"Frames per burst: ".fmt(f)?;
-    //stream.get_frames_per_burst().fmt(f)?;
-    "\nAudio API: ".fmt(f)?;
-    stream.get_audio_api().fmt(f)?;
+    "Audio API: ".fmt(f)?;
+    fmt::Debug::fmt(&stream.get_audio_api(), f)?;
     "\nCurrent state: ".fmt(f)?;
-    stream.get_state().fmt(f)?;
+    fmt::Debug::fmt(&stream.get_state(), f)?;
     "\nXrun count: ".fmt(f)?;
-    stream.get_xrun_count().fmt(f)?;
-    /*if stream.get_direction() == Direction::Input {
-        "\nFrames read: ".fmt(f)?;
-        stream.get_frames_read().fmt(f)?;
-    } else {
-        "\nFrames written: ".fmt(f)?;
-        stream.get_frames_written().fmt(f)?;
-    }*/
+    match stream.get_xrun_count() {
+        Ok(count) => count.fmt(f)?,
+        Err(error) => fmt::Debug::fmt(&error, f)?,
+    }
     '\n'.fmt(f)
 }
 

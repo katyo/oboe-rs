@@ -1,7 +1,7 @@
 //use oboe_sys as ffi;
 use num_traits::FromPrimitive;
 
-use std::fmt::{self, Debug};
+use std::fmt::{self, Display};
 
 use super::{
     ChannelCount,
@@ -193,12 +193,12 @@ pub(crate) fn audio_stream_base_fmt<T: AudioStreamBase>(base: &T, f: &mut fmt::F
     "DeviceId: ".fmt(f)?;
     base.get_device_id().fmt(f)?;
     "\nSessionId: ".fmt(f)?;
-    base.get_session_id().fmt(f)?;
+    fmt::Debug::fmt(&base.get_session_id(), f)?;
     "\nDirection: ".fmt(f)?;
-    base.get_direction().fmt(f)?;
+    fmt::Debug::fmt(&base.get_direction(), f)?;
     if base.get_direction() == Direction::Input {
         "\nInput preset: ".fmt(f)?;
-        base.get_input_preset().fmt(f)?;
+        fmt::Debug::fmt(&base.get_input_preset(), f)?;
     }
     "\nBuffer capacity in frames: ".fmt(f)?;
     base.get_buffer_capacity_in_frames().fmt(f)?;
@@ -209,24 +209,24 @@ pub(crate) fn audio_stream_base_fmt<T: AudioStreamBase>(base: &T, f: &mut fmt::F
     "\nSample rate: ".fmt(f)?;
     base.get_sample_rate().fmt(f)?;
     "\nSample rate conversion quality: ".fmt(f)?;
-    base.get_sample_rate_conversion_quality().fmt(f)?;
+    fmt::Debug::fmt(&base.get_sample_rate_conversion_quality(), f)?;
     "\nChannel count: ".fmt(f)?;
-    base.get_channel_count().fmt(f)?;
+    fmt::Debug::fmt(&base.get_channel_count(), f)?;
     if base.is_channel_conversion_allowed() {
         " (conversion allowed)".fmt(f)?;
     }
     "\nFormat: ".fmt(f)?;
-    base.get_format().fmt(f)?;
+    fmt::Debug::fmt(&base.get_format(), f)?;
     if base.is_format_conversion_allowed() {
         " (conversion allowed)".fmt(f)?;
     }
     "\nSharing mode: ".fmt(f)?;
-    base.get_sharing_mode().fmt(f)?;
+    fmt::Debug::fmt(&base.get_sharing_mode(), f)?;
     "\nPerformance mode: ".fmt(f)?;
-    base.get_performance_mode().fmt(f)?;
+    fmt::Debug::fmt(&base.get_performance_mode(), f)?;
     "\nUsage: ".fmt(f)?;
-    base.get_usage().fmt(f)?;
+    fmt::Debug::fmt(&base.get_usage(), f)?;
     "\nContent type: ".fmt(f)?;
-    base.get_content_type().fmt(f)?;
+    fmt::Debug::fmt(&base.get_content_type(), f)?;
     '\n'.fmt(f)
 }
