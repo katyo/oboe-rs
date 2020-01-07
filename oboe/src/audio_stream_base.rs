@@ -22,95 +22,90 @@ use super::{
  */
 pub trait AudioStreamBase {
     /**
-     * @return number of channels, for example 2 for stereo, or kUnspecified
+     * Get actual number of channels
      */
     fn get_channel_count(&self) -> ChannelCount;
 
     /**
-     * @return Direction::Input or Direction::Output
+     * Get actual stream direction
+     *
+     * `Direction::Input` or `Direction::Output`.
      */
     fn get_direction(&self) -> Direction;
 
     /**
-     * @return sample rate for the stream or kUnspecified
+     * Get the actual sample rate for the stream
      */
     fn get_sample_rate(&self) -> i32;
 
     /**
-     * @return the number of frames in each callback or kUnspecified.
+     * Get the number of frames in each callback
      */
     fn get_frames_per_callback(&self) -> i32;
 
     /**
-     * @return the audio sample format (e.g. Float or I16)
+     * Get the audio sample format (e.g. F32 or I16)
      */
     fn get_format(&self) -> AudioFormat;
 
     /**
      * Query the maximum number of frames that can be filled without blocking.
      * If the stream has been closed the last known value will be returned.
-     *
-     * @return buffer size
      */
     fn get_buffer_size_in_frames(&self) -> i32;
 
     /**
-     * @return capacityInFrames or kUnspecified
+     * Get the capacity in number of frames
      */
     fn get_buffer_capacity_in_frames(&self) -> i32;
 
     /**
-     * @return the sharing mode of the stream.
+     * Get the sharing mode of the stream
      */
     fn get_sharing_mode(&self) -> SharingMode;
 
     /**
-     * @return the performance mode of the stream.
+     * Get the performance mode of the stream
      */
     fn get_performance_mode(&self) -> PerformanceMode;
 
     /**
-     * @return the device ID of the stream.
+     * Get the device identifier of the stream
      */
     fn get_device_id(&self) -> i32;
 
     /**
-     * @return the callback object for this stream, if set.
-     */
-    //fn get_callback(&self) -> &AudioStreamCallback;
-
-    /**
-     * @return the usage for this stream.
+     * Get the usage for this stream
      */
     fn get_usage(&self) -> Usage;
 
     /**
-     * @return the stream's content type.
+     * Get the stream's content type
      */
     fn get_content_type(&self) -> ContentType;
 
     /**
-     * @return the stream's input preset.
+     * Get the stream's input preset
      */
     fn get_input_preset(&self) -> InputPreset;
 
     /**
-     * @return the stream's session ID allocation strategy (None or Allocate).
+     * Get the stream's session ID allocation strategy (None or Allocate)
      */
     fn get_session_id(&self) -> SessionId;
 
     /**
-     * @return true if Oboe can convert channel counts to achieve optimal results.
+     * Return true if can convert channel counts to achieve optimal results.
      */
     fn is_channel_conversion_allowed(&self) -> bool;
 
     /**
-     * @return true if  Oboe can convert data formats to achieve optimal results.
+     * Return true if  Oboe can convert data formats to achieve optimal results.
      */
     fn is_format_conversion_allowed(&self) -> bool;
 
     /**
-     * @return whether and how Oboe can convert sample rates to achieve optimal results.
+     * Get whether and how Oboe can convert sample rates to achieve optimal results.
      */
     fn get_sample_rate_conversion_quality(&self) -> SampleRateConversionQuality;
 }
@@ -155,10 +150,6 @@ impl<T: RawAudioStreamBase> AudioStreamBase for T {
     fn get_device_id(&self) -> i32 {
         self._raw_base().mDeviceId
     }
-
-    /*fn get_callback(&self) -> &AudioStreamCallback {
-        self._raw_base().mStreamCallback
-    }*/
 
     fn get_usage(&self) -> Usage {
         FromPrimitive::from_i32(self._raw_base().mUsage).unwrap()

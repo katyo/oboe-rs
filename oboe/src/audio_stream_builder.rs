@@ -116,9 +116,9 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
     }
 
     /**
-     * Request a specific number of channels.
+     * Request a specific number of channels
      *
-     * Default is ChannelCount::Unspecified. If the value is unspecified then
+     * Default is `Unspecified`. If the value is unspecified then
      * the application should query for the actual value after the stream is opened.
      */
     pub fn set_channel_count<X: IsChannelCount>(self) -> AudioStreamBuilder<D, X, T> {
@@ -127,18 +127,24 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
         builder
     }
 
+    /**
+     * Request mono mode for a stream
+     */
     pub fn set_mono(self) -> AudioStreamBuilder<D, Mono, T> {
         self.set_channel_count::<Mono>()
     }
 
+    /**
+     * Request stereo mode for a stream
+     */
     pub fn set_stereo(self) -> AudioStreamBuilder<D, Stereo, T> {
         self.set_channel_count::<Stereo>()
     }
 
     /**
-     * Request the direction for a stream. The default is Direction::Output.
+     * Request the direction for a stream
      *
-     * @param direction Direction::Output or Direction::Input
+     * The default is `Direction::Output`
      */
     pub fn set_direction<X: IsDirection>(self) -> AudioStreamBuilder<X, C, T> {
         let mut builder = self.convert();
@@ -146,10 +152,18 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
         builder
     }
 
+    /**
+     * Request input direction for a stream
+     */
     pub fn set_input(self) -> AudioStreamBuilder<Input, C, T> {
         self.set_direction::<Input>()
     }
 
+    /**
+     * Request output direction for a stream
+     *
+     * It is optional because th stream builder already configured as output by default.
+     */
     pub fn set_output(self) -> AudioStreamBuilder<Output, C, T> {
         self.set_direction::<Output>()
     }
@@ -160,10 +174,9 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * Default is kUnspecified. If the value is unspecified then
      * the application should query for the actual value after the stream is opened.
      *
-     * Technically, this should be called the "frame rate" or "frames per second",
+     * Technically, this should be called the _frame rate_ or _frames per second_,
      * because it refers to the number of complete frames transferred per second.
-     * But it is traditionally called "sample rate". Se we use that term.
-     *
+     * But it is traditionally called _sample rate_. Se we use that term.
      */
     pub fn set_sample_rate(mut self, sample_rate: i32) -> Self {
         self._raw_base_mut().mSampleRate = sample_rate;
@@ -180,9 +193,6 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * leaving this unspecified. This allow the underlying API to optimize
      * the callbacks. But if your application is, for example, doing FFTs or other block
      * oriented operations, then call this function to get the sizes you need.
-     *
-     * @param frames_per_callback
-     * @return pointer to the builder so calls can be chained
      */
     pub fn set_frames_per_callback(mut self, frames_per_callback: i32) -> Self {
         self._raw_base_mut().mFramesPerCallback = frames_per_callback;
@@ -190,9 +200,9 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
     }
 
     /**
-     * Request a sample data format, for example Format::Float.
+     * Request a sample data format, for example `f32`.
      *
-     * Default is Format::Unspecified. If the value is unspecified then
+     * Default is unspecified. If the value is unspecified then
      * the application should query for the actual value after the stream is opened.
      */
     pub fn set_format<X: IsFormat>(self) -> AudioStreamBuilder<D, C, X> {
@@ -211,15 +221,12 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
 
     /**
      * Set the requested buffer capacity in frames.
-     * BufferCapacityInFrames is the maximum possible BufferSizeInFrames.
+     * Buffer capacity in frames is the maximum possible buffer size in frames.
      *
-     * The final stream capacity may differ. For AAudio it should be at least this big.
-     * For OpenSL ES, it could be smaller.
+     * The final stream capacity may differ. For __AAudio__ it should be at least this big.
+     * For __OpenSL ES__, it could be smaller.
      *
-     * Default is kUnspecified.
-     *
-     * @param bufferCapacityInFrames the desired buffer capacity in frames or kUnspecified
-     * @return pointer to the builder so calls can be chained
+     * Default is unspecified.
      */
     pub fn set_buffer_capacity_in_frames(mut self, buffer_capacity_in_frames: i32) -> Self {
         self._raw_base_mut().mBufferCapacityInFrames = buffer_capacity_in_frames;
@@ -231,10 +238,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * the API which will actually be used. Query the stream itself to find out the API which is
      * being used.
      *
-     * If you do not specify the API, then AAudio will be used if isAAudioRecommended()
-     * returns true. Otherwise OpenSL ES will be used.
-     *
-     * @return the requested audio API
+     * If you do not specify the API, then __AAudio__ will be used if isAAudioRecommended()
+     * returns true. Otherwise __OpenSL ES__ will be used.
      */
     pub fn get_audio_api(&self) -> AudioApi {
         FromPrimitive::from_i32((*self.raw).mAudioApi).unwrap()
@@ -245,13 +250,10 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * for the device and SDK version at runtime.
      *
      * This should almost always be left unspecified, except for debugging purposes.
-     * Specifying AAudio will force Oboe to use AAudio on 8.0, which is extremely risky.
-     * Specifying OpenSLES should mainly be used to test legacy performance/functionality.
+     * Specifying __AAudio__ will force Oboe to use AAudio on 8.0, which is extremely risky.
+     * Specifying __OpenSL ES__ should mainly be used to test legacy performance/functionality.
      *
      * If the caller requests AAudio and it is supported then AAudio will be used.
-     *
-     * @param audioApi Must be AudioApi::Unspecified, AudioApi::OpenSLES or AudioApi::AAudio.
-     * @return pointer to the builder so calls can be chained
      */
     pub fn set_audio_api(mut self, audio_api: AudioApi) -> Self {
         (*self.raw).mAudioApi = audio_api as i32;
@@ -262,8 +264,6 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * Is the AAudio API supported on this device?
      *
      * AAudio was introduced in the Oreo 8.0 release.
-     *
-     * @return true if supported
      */
     pub fn is_aaudio_supported() -> bool {
         unsafe { ffi::oboe_AudioStreamBuilder_isAAudioSupported() }
@@ -274,8 +274,6 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * AAudio may be supported but not recommended because of version specific issues.
      * AAudio is not recommended for Android 8.0 or earlier versions.
-     *
-     * @return true if recommended
      */
     pub fn is_aaudio_recommended() -> bool {
         unsafe { ffi::oboe_AudioStreamBuilder_isAAudioRecommended() }
@@ -285,19 +283,22 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * Request a mode for sharing the device.
      * The requested sharing mode may not be available.
      * So the application should query for the actual mode after the stream is opened.
-     *
-     * @param sharingMode SharingMode::Shared or SharingMode::Exclusive
-     * @return pointer to the builder so calls can be chained
      */
     pub fn set_sharing_mode(mut self, sharing_mode: SharingMode) -> Self {
         self._raw_base_mut().mSharingMode = sharing_mode as i32;
         self
     }
 
+    /**
+     * Request a shared mode for the device
+     */
     pub fn set_shared(self) -> Self {
         self.set_sharing_mode(SharingMode::Shared)
     }
 
+    /**
+     * Request an exclusive mode for the device
+     */
     pub fn set_exclusive(self) -> Self {
         self.set_sharing_mode(SharingMode::Exclusive)
     }
@@ -306,9 +307,6 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * Request a performance level for the stream.
      * This will determine the latency, the power consumption, and the level of
      * protection from glitches.
-     *
-     * @param performanceMode for example, PerformanceMode::LowLatency
-     * @return pointer to the builder so calls can be chained
      */
     pub fn set_performance_mode(mut self, performance_mode: PerformanceMode) -> Self {
         self._raw_base_mut().mPerformanceMode = performance_mode as i32;
@@ -324,8 +322,6 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * The default, if you do not call this function, is Usage::Media.
      *
      * Added in API level 28.
-     *
-     * @param usage the desired usage, eg. Usage::Game
      */
     pub fn set_usage(mut self, usage: Usage) -> Self {
         self._raw_base_mut().mUsage = usage as i32;
@@ -338,11 +334,9 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * The system will use this information to optimize the behavior of the stream.
      * This could, for example, affect whether a stream is paused when a notification occurs.
      *
-     * The default, if you do not call this function, is ContentType::Music.
+     * The default, if you do not call this function, is `ContentType::Music`.
      *
      * Added in API level 28.
-     *
-     * @param contentType the type of audio data, eg. ContentType::Speech
      */
     pub fn set_content_type(mut self, content_type: ContentType) -> Self {
         self._raw_base_mut().mContentType = content_type as i32;
@@ -361,8 +355,6 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * on many platforms.
      *
      * Added in API level 28.
-     *
-     * @param inputPreset the desired configuration for recording
      */
     pub fn set_input_preset(mut self, input_preset: InputPreset) -> Self {
         self._raw_base_mut().mInputPreset = input_preset as i32;
@@ -375,9 +367,9 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * The session ID can be used to associate a stream with effects processors.
      * The effects are controlled using the Android AudioEffect Java API.
      *
-     * The default, if you do not call this function, is SessionId::None.
+     * The default, if you do not call this function, is `SessionId::None`.
      *
-     * If set to SessionId::Allocate then a session ID will be allocated
+     * If set to `SessionId::Allocate` then a session ID will be allocated
      * when the stream is opened.
      *
      * The allocated session ID can be obtained by calling AudioStream::getSessionId()
@@ -391,8 +383,6 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * Allocated session IDs will always be positive and nonzero.
      *
      * Added in API level 28.
-     *
-     * @param sessionId an allocated sessionID or SessionId::Allocate
      */
     pub fn set_session_id(mut self, session_id: SessionId) -> Self {
         self._raw_base_mut().mSessionId = session_id as i32;
@@ -403,19 +393,17 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * Request a stream to a specific audio input/output device given an audio device ID.
      *
      * In most cases, the primary device will be the appropriate device to use, and the
-     * deviceId can be left kUnspecified.
+     * device ID can be left unspecified.
      *
      * On Android, for example, the ID could be obtained from the Java AudioManager.
      * AudioManager.getDevices() returns an array of AudioDeviceInfo[], which contains
      * a getId() method (as well as other type information), that should be passed
      * to this method.
      *
+     * When `java-interface` feature is used you can call [AudioDeviceInfo::request()] for listing devices info.
      *
      * Note that when using OpenSL ES, this will be ignored and the created
-     * stream will have deviceId kUnspecified.
-     *
-     * @param deviceId device identifier or kUnspecified
-     * @return pointer to the builder so calls can be chained
+     * stream will have device ID unspecified.
      */
     pub fn set_device_id(mut self, device_id: i32) -> Self {
         self._raw_base_mut().mDeviceId = device_id;
@@ -457,7 +445,7 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      *
      * If you do the conversion in Oboe then you might still get a low latency stream.
      *
-     * Default is SampleRateConversionQuality::None
+     * Default is `SampleRateConversionQuality::None`
      */
     pub fn set_sample_rate_conversion_quality(mut self, quality: SampleRateConversionQuality) -> Self {
         self._raw_base_mut().mSampleRateConversionQuality = quality as i32;
@@ -465,7 +453,7 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
     }
 
     /**
-     * @return true if AAudio will be used based on the current settings.
+     * Returns true if AAudio will be used based on the current settings.
      */
     pub fn will_use_aaudio(&self) -> bool {
         let audio_api = self.get_audio_api();
@@ -476,12 +464,7 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
 
 impl<D: IsDirection, C: IsChannelCount, T: IsFormat> AudioStreamBuilder<D, C, T> {
     /**
-     * Create and open a stream object based on the current settings.
-     *
-     * The caller owns the pointer to the AudioStream object.
-     *
-     * @param stream pointer to a variable to receive the stream address
-     * @return OBOE_OK if successful or a negative error code
+     * Create and open a synchronous (blocking) stream based on the current settings.
      */
     pub fn open_stream(self) -> Result<AudioStreamSync<D, (T, C)>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
@@ -502,8 +485,8 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Input, C, T> {
     /**
      * Specifies an object to handle data or error related callbacks from the underlying API.
      *
-     * <strong>Important: See AudioStreamCallback for restrictions on what may be called
-     * from the callback methods.</strong>
+     * __Important: See AudioStreamCallback for restrictions on what may be called
+     * from the callback methods.__
      *
      * When an error callback occurs, the associated stream will be stopped and closed in a separate thread.
      *
@@ -516,9 +499,6 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Input, C, T> {
      *
      * This leaves a raw pointer as the logical type choice. The only caveat being that the caller must not destroy
      * the callback before the stream has been closed.
-     *
-     * @param streamCallback
-     * @return pointer to the builder so calls can be chained
      */
     pub fn set_callback<F>(self, stream_callback: F) -> AudioStreamBuilderAsync<Input, F>
     where
@@ -538,8 +518,8 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
     /**
      * Specifies an object to handle data or error related callbacks from the underlying API.
      *
-     * <strong>Important: See AudioStreamCallback for restrictions on what may be called
-     * from the callback methods.</strong>
+     * __Important: See AudioStreamCallback for restrictions on what may be called
+     * from the callback methods.__
      *
      * When an error callback occurs, the associated stream will be stopped and closed in a separate thread.
      *
@@ -552,9 +532,6 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
      *
      * This leaves a raw pointer as the logical type choice. The only caveat being that the caller must not destroy
      * the callback before the stream has been closed.
-     *
-     * @param streamCallback
-     * @return pointer to the builder so calls can be chained
      */
     pub fn set_callback<F>(self, stream_callback: F) -> AudioStreamBuilderAsync<Output, F>
     where
@@ -597,12 +574,7 @@ impl<D, F> RawAudioStreamBase for AudioStreamBuilderAsync<D, F> {
 
 impl<F: AudioInputCallback + Send> AudioStreamBuilderAsync<Input, F> {
     /**
-     * Create and open a stream object based on the current settings.
-     *
-     * The caller owns the pointer to the AudioStream object.
-     *
-     * @param stream pointer to a variable to receive the stream address
-     * @return OBOE_OK if successful or a negative error code
+     * Create and open an asynchronous (callback-driven) input stream based on the current settings.
      */
     pub fn open_stream(self) -> Result<AudioStreamAsync<Input, F>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
@@ -622,12 +594,7 @@ impl<F: AudioInputCallback + Send> AudioStreamBuilderAsync<Input, F> {
 
 impl<F: AudioOutputCallback + Send> AudioStreamBuilderAsync<Output, F> {
     /**
-     * Create and open a stream object based on the current settings.
-     *
-     * The caller owns the pointer to the AudioStream object.
-     *
-     * @param stream pointer to a variable to receive the stream address
-     * @return OBOE_OK if successful or a negative error code
+     * Create and open an asynchronous (callback-driven) output stream based on the current settings.
      */
     pub fn open_stream(self) -> Result<AudioStreamAsync<Output, F>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();

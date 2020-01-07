@@ -41,12 +41,12 @@ use super::{
  * The default number of nanoseconds to wait for when performing state change operations on the
  * stream, such as `start` and `stop`.
  *
- * @see oboe::AudioStream::start
+ * See [AudioStream::start_with_timeout]
  */
 pub const DEFAULT_TIMEOUT_NANOS: i64 = 2000 * NANOS_PER_MILLISECOND;
 
 /**
- * Base class for Oboe audio stream.
+ * Base trait for Oboe audio stream.
  */
 pub trait AudioStream: AudioStreamBase {
     /**
@@ -54,8 +54,6 @@ pub trait AudioStream: AudioStreamBase {
      *
      * Note that we do not recommend re-opening a stream that has been closed.
      * TODO Should we prevent re-opening?
-     *
-     * @return
      */
     fn open(&mut self) -> Status {
         Ok(())
@@ -122,10 +120,6 @@ pub trait AudioStream: AudioStreamBase {
      */
     fn stop_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status;
 
-    /* Asynchronous requests.
-     * Use wait_for_state_change() if you need to wait for completion.
-     */
-
     /**
      * Start the stream asynchronously. Returns immediately (does not block). Equivalent to calling
      * `start(0)`.
@@ -151,9 +145,7 @@ pub trait AudioStream: AudioStreamBase {
     fn request_stop(&mut self) -> Status;
 
     /**
-     * Query the current state, eg. StreamState::Pausing
-     *
-     * @return state or a negative error.
+     * Query the current state, eg. `StreamState::Pausing`
      */
     fn get_state(&self) -> StreamState;
 
@@ -180,12 +172,7 @@ pub trait AudioStream: AudioStreamBase {
      * ```
      *
      * If the state does not change within the timeout period then it will
-     * return ErrorTimeout. This is true even if timeoutNanoseconds is zero.
-     *
-     * @param inputState The state we want to change away from.
-     * @param nextState Pointer to a variable that will be set to the new state.
-     * @param timeoutNanoseconds The maximum time to wait in nanoseconds.
-     * @return Result::OK or a Result::Error.
+     * return [Error::Timeout]. This is true even if timeout_nanoseconds is zero.
      */
     fn wait_for_state_change(&mut self,
                              input_state: StreamState,
@@ -194,14 +181,10 @@ pub trait AudioStream: AudioStreamBase {
     /**
      * This can be used to adjust the latency of the buffer by changing
      * the threshold where blocking will occur.
-     * By combining this with getXRunCount(), the latency can be tuned
+     * By combining this with [AudioStream::get_xrun_count()], the latency can be tuned
      * at run-time for each device.
      *
-     * This cannot be set higher than getBufferCapacity().
-     *
-     * @param requestedFrames requested number of frames that can be filled without blocking
-     * @return the resulting buffer size in frames (obtained using value()) or an error (obtained
-     * using error())
+     * This cannot be set higher than [AudioStream::get_buffer_capacity()].
      */
     fn set_buffer_size_in_frames(&mut self, _requested_frames: i32) -> Result<i32> {
         Err(Error::Unimplemented)
@@ -215,23 +198,18 @@ pub trait AudioStream: AudioStreamBase {
      * and there is no place to put the incoming data so it is discarded.
      *
      * An underrun or overrun can cause an audible "pop" or "glitch".
-     *
-     * @return a result which is either Result::OK with the xRun count as the value, or a
-     * Result::Error* code
      */
     fn get_xrun_count(&self) -> Result<i32> {
         Err(Error::Unimplemented)
     }
 
     /**
-     * @return true if XRun counts are supported on the stream
+     * Returns true if XRun counts are supported on the stream
      */
     fn is_xrun_count_supported(&self) -> bool;
 
     /**
      * Query the number of frames that are read or written by the endpoint at one time.
-     *
-     * @return burst size
      */
     fn get_frames_per_burst(&mut self) -> i32;
 
@@ -239,8 +217,6 @@ pub trait AudioStream: AudioStreamBase {
      * Get the number of bytes in each audio frame. This is calculated using the channel count
      * and the sample format. For example, a 2 channel floating point stream will have
      * 2 * 4 = 8 bytes per frame.
-     *
-     * @return number of bytes in each audio frame.
      */
     fn get_bytes_per_frame(&mut self) -> i32 {
         self.get_channel_count() as i32 * self.get_bytes_per_sample()
@@ -273,21 +249,18 @@ pub trait AudioStream: AudioStreamBase {
      *
      * The latency of an OUTPUT stream is generally higher than the INPUT latency
      * because an app generally tries to keep the OUTPUT buffer full and the INPUT buffer empty.
-     *
-     * @return a ResultWithValue which has a result of Result::OK and a value containing the latency
-     * in milliseconds, or a result of Result::Error*.
      */
     fn calculate_latency_millis(&mut self) -> Result<f64> {
         Err(Error::Unimplemented)
     }
 
     /**
-     * Get the estimated time that the frame at `framePosition` entered or left the audio processing
+     * Get the estimated time that the frame at `frame_position` entered or left the audio processing
      * pipeline.
      *
      * This can be used to coordinate events and interactions with the external environment, and to
      * estimate the latency of an audio stream. An example of usage can be found in the hello-oboe
-     * sample (search for "calculateCurrentOutputLatencyMillis").
+     * sample (search for "calculate_current_output_latency_millis").
      *
      * The time is based on the implementation's best effort, using whatever knowledge is available
      * to the system, but cannot account for any delay unknown to the implementation.
@@ -300,35 +273,18 @@ pub trait AudioStream: AudioStreamBase {
 
     /**
      * Get the underlying audio API which the stream uses.
-     *
-     * @return the API that this stream uses.
      */
     fn get_audio_api(&self) -> AudioApi;
 
     /**
      * Returns true if the underlying audio API is AAudio.
-     *
-     * @return true if this stream is implemented using the AAudio API.
      */
     fn uses_aaudio(&self) -> bool {
         self.get_audio_api() == AudioApi::AAudio
     }
 
-    /*
-     * Swap old callback for new callback.
-     * This not atomic.
-     * This should only be used internally.
-     * @param streamCallback
-     * @return previous streamCallback
-     */
-    /*AudioStreamCallback *swap_callback(AudioStreamCallback *streamCallback) {
-        AudioStreamCallback *previousCallback = mStreamCallback;
-        mStreamCallback = streamCallback;
-        return previousCallback;
-    }*/
-
     /**
-     * @return number of frames of data currently in the buffer
+     * Returns the number of frames of data currently in the buffer
      */
     fn get_available_frames(&mut self) -> Result<i32>;
 
@@ -336,10 +292,6 @@ pub trait AudioStream: AudioStreamBase {
      * Wait until the stream has a minimum amount of data available in its buffer.
      * This can be used with an EXCLUSIVE MMAP input stream to avoid reading data too close to
      * the DSP write position, which may cause glitches.
-     *
-     * @param numFrames minimum frames available
-     * @param timeoutNanoseconds
-     * @return number of frames available, ErrorTimeout
      */
     fn wait_for_available_frames(&mut self,
                                  num_frames: i32,
@@ -354,8 +306,6 @@ pub trait AudioInputStream: AudioStream {
     /**
      * The number of audio frames read from the stream.
      * This monotonic counter will never get reset.
-     *
-     * @return the number of frames read so far
      */
     fn get_frames_read(&mut self) -> i64;
 }
@@ -370,13 +320,7 @@ pub trait AudioInputStreamSync: AudioInputStream {
      * Read data into the supplied buffer from the stream. This method will block until the read
      * is complete or it runs out of time.
      *
-     * If `timeoutNanoseconds` is zero then this call will not wait.
-     *
-     * @param buffer The address of the first sample.
-     * @param numFrames Number of frames to read. Only complete frames will be read.
-     * @param timeoutNanoseconds Maximum number of nanoseconds to wait for completion.
-     * @return a ResultWithValue which has a result of Result::OK and a value containing the number
-     * of frames actually read, or result of Result::Error*.
+     * If `timeout_nanoseconds` is zero then this call will not wait.
      */
     fn read(&mut self,
             _buffer: &mut [<Self::FrameType as IsFrameType>::Type],
@@ -392,8 +336,6 @@ pub trait AudioOutputStream: AudioStream {
     /**
      * The number of audio frames written into the stream.
      * This monotonic counter will never get reset.
-     *
-     * @return the number of frames written so far
      */
     fn get_frames_written(&mut self) -> i64;
 }
@@ -408,13 +350,7 @@ pub trait AudioOutputStreamSync: AudioOutputStream {
      * Write data from the supplied buffer into the stream. This method will block until the write
      * is complete or it runs out of time.
      *
-     * If `timeoutNanoseconds` is zero then this call will not wait.
-     *
-     * @param buffer The address of the first sample.
-     * @param numFrames Number of frames to write. Only complete frames will be written.
-     * @param timeoutNanoseconds Maximum number of nanoseconds to wait for completion.
-     * @return a ResultWithValue which has a result of Result::OK and a value containing the number
-     * of frames actually written, or result of Result::Error*.
+     * If `timeout_nanoseconds` is zero then this call will not wait.
      */
     fn write(&mut self,
              _buffer: &[<Self::FrameType as IsFrameType>::Type],
@@ -684,7 +620,7 @@ impl DerefMut for AudioStreamHandle {
 }
 
 /**
- * Reference to an audio stream for passing to callbacks
+ * Reference to the audio stream for passing to callbacks
  */
 #[repr(transparent)]
 pub struct AudioStreamRef<'s, D> {
@@ -729,7 +665,7 @@ impl<'s> RawAudioInputStream for AudioStreamRef<'s, Input> {}
 impl<'s> RawAudioOutputStream for AudioStreamRef<'s, Output> {}
 
 /**
- * An audio stream with callback
+ * The audio stream for asynchronous (callback-driven) mode
  */
 pub struct AudioStreamAsync<D, F> {
     raw: AudioStreamHandle,
@@ -776,7 +712,7 @@ impl<F> RawAudioInputStream for AudioStreamAsync<Input, F> {}
 impl<F> RawAudioOutputStream for AudioStreamAsync<Output, F> {}
 
 /**
- * The audio stream with blocking IO
+ * The audio stream for synchronous (blocking) mode
  */
 pub struct AudioStreamSync<D, F> {
     raw: AudioStreamHandle,

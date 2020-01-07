@@ -23,11 +23,10 @@ use super::{
 };
 
 /**
- * AudioStreamCallback defines a callback interface for:
+ * This trait defines a callback interface for:
  *
- * 1) moving data to/from an audio stream using `onAudioReady`
- * 2) being alerted when a stream has an error using `onError*` methods
- *
+ * 1) moving data to/from an audio stream using `on_audio_ready`
+ * 2) being alerted when a stream has an error using `on_error_*` methods
  */
 pub trait AudioInputCallback {
     /**
@@ -53,9 +52,6 @@ pub trait AudioInputCallback {
      *
      * Do not close or delete the stream in this method because it will be
      * closed after this method returns.
-     *
-     * @param oboeStream pointer to the associated stream
-     * @param error
      */
     fn on_error_before_close(
         &mut self,
@@ -71,9 +67,6 @@ pub trait AudioInputCallback {
      *
      * This callback could be used to reopen a new stream on another device.
      * You can safely delete the old AudioStream in this method.
-     *
-     * @param oboeStream pointer to the associated stream
-     * @param error
      */
     fn on_error_after_close(
         &mut self,
@@ -84,10 +77,10 @@ pub trait AudioInputCallback {
     /**
      * A buffer is ready for processing.
      *
-     * For an output stream, this function should render and write numFrames of data
+     * For an output stream, this function should render and write `num_frames` of data
      * in the stream's current data format to the audioData buffer.
      *
-     * For an input stream, this function should read and process numFrames of data
+     * For an input stream, this function should read and process `num_frames` of data
      * from the audioData buffer.
      *
      * The audio data is passed through the buffer. So do NOT call read() or
@@ -118,11 +111,6 @@ pub trait AudioInputCallback {
      *
      * If you need to move data, eg. MIDI commands, in or out of the callback function then
      * we recommend the use of non-blocking techniques such as an atomic FIFO.
-     *
-     * @param oboeStream pointer to the associated stream
-     * @param audioData buffer containing input data or a place to put output data
-     * @param numFrames number of frames to be processed
-     * @return DataCallbackResult::Continue or DataCallbackResult::Stop
      */
     fn on_audio_ready(
         &mut self,
@@ -132,11 +120,10 @@ pub trait AudioInputCallback {
 }
 
 /**
- * AudioStreamCallback defines a callback interface for:
+ * This trait defines a callback interface for:
  *
- * 1) moving data to/from an audio stream using `onAudioReady`
- * 2) being alerted when a stream has an error using `onError*` methods
- *
+ * 1) moving data to/from an audio stream using `on_audio_ready`
+ * 2) being alerted when a stream has an error using `on_error_*` methods
  */
 pub trait AudioOutputCallback {
     /**
@@ -162,9 +149,6 @@ pub trait AudioOutputCallback {
      *
      * Do not close or delete the stream in this method because it will be
      * closed after this method returns.
-     *
-     * @param oboeStream pointer to the associated stream
-     * @param error
      */
     fn on_error_before_close(
         &mut self,
@@ -180,9 +164,6 @@ pub trait AudioOutputCallback {
      *
      * This callback could be used to reopen a new stream on another device.
      * You can safely delete the old AudioStream in this method.
-     *
-     * @param oboeStream pointer to the associated stream
-     * @param error
      */
     fn on_error_after_close(
         &mut self,
@@ -202,7 +183,7 @@ pub trait AudioOutputCallback {
      * The audio data is passed through the buffer. So do NOT call read() or
      * write() on the stream that is making the callback.
      *
-     * Note that numFrames can vary unless AudioStreamBuilder::setFramesPerCallback()
+     * Note that numFrames can vary unless AudioStreamBuilder::set_frames_per_callback()
      * is called.
      *
      * Also note that this callback function should be considered a "real-time" function.
@@ -222,16 +203,11 @@ pub trait AudioOutputCallback {
      *
      * The following are OK to call from the data callback:
      *
-     * - oboeStream.get*()
+     * - oboeStream.get_*()
      * - oboeStream.set_buffer_size_in_frames()
      *
      * If you need to move data, eg. MIDI commands, in or out of the callback function then
      * we recommend the use of non-blocking techniques such as an atomic FIFO.
-     *
-     * @param oboeStream pointer to the associated stream
-     * @param audioData buffer containing input data or a place to put output data
-     * @param numFrames number of frames to be processed
-     * @return DataCallbackResult::Continue or DataCallbackResult::Stop
      */
     fn on_audio_ready(&mut self,
                       audio_stream: &mut dyn AudioOutputStream,

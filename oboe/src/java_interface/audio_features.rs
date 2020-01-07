@@ -12,6 +12,9 @@ use super::{
     },
 };
 
+/**
+ * The Android audio features
+ */
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AudioFeature {
     LowLatency,

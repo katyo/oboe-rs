@@ -440,20 +440,19 @@ pub enum SessionId {
      * effects using the Java AudioEffects API.
      * Note that the use of this flag may result in higher latency.
      *
-     * Note that this matches the value of AudioManager.AUDIO_SESSION_ID_GENERATE.
+     * Note that this matches the value of `AudioManager.AUDIO_SESSION_ID_GENERATE`.
      */
     Allocate = ffi::oboe_SessionId_Allocate,
 }
 
 /**
- * The channel count of the audio stream. The underlying type is `i32`.
+ * The channel count of the audio stream.
  * Use of this enum is convenient to avoid "magic"
  * numbers when specifying the channel count.
  *
  * For example, you can write
  * `builder.set_channel_count(ChannelCount::Stereo)`
- * rather than `builder.set_channel_count(2)`
- *
+ * rather than `builder.set_channel_count(2).
  */
 #[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
