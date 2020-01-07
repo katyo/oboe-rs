@@ -3,9 +3,6 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::{FromPrimitive};
 use oboe_sys as ffi;
 
-#[cfg(feature = "java-interface")]
-use super::request_default_stream_values;
-
 /**
  * The number of nanoseconds in a microsecond. 1,000.
  */
@@ -532,32 +529,6 @@ impl DefaultStreamValues {
 
     pub fn set_channel_count(channel_count: i32) {
         unsafe { ffi::oboe_DefaultStreamValues_ChannelCount = channel_count; }
-    }
-
-    /**
-     * Try request defaults from AudioManager properties.
-     */
-    pub fn request_from_properties() -> bool {
-        #[cfg(feature = "java-interface")]
-        {
-            match request_default_stream_values() {
-                Ok((sample_rate, frames_per_burst)) => {
-                    if let Some(value) = sample_rate {
-                        DefaultStreamValues::set_sample_rate(value);
-                    }
-
-                    if let Some(value) = frames_per_burst {
-                        DefaultStreamValues::set_frames_per_burst(value);
-                    }
-
-                    true
-                },
-                Err(error) => {
-                    eprintln!("Unable to request default stream values due to: {}", error);
-                    false
-                },
-            }
-        }
     }
 }
 
