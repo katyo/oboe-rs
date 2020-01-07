@@ -13,6 +13,10 @@ include = ["/src/*.rs", "/oboe-ext", "/README.md"]
 [badges]
 maintenance = { status = "experimental" }
 
+[build-dependencies.fetch_unroll]
+version = "0.1"
+#optional = true
+
 [build-dependencies.git2]
 version = "0.11"
 optional = true

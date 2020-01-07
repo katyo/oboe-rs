@@ -7,10 +7,11 @@ use bindgen;
 #[cfg(all(feature = "compile-library", feature = "cmake"))]
 use cmake;
 
-use std::env;
+#[cfg(not(feature = "compile-library"))]
+use fetch_unroll::{fetch_unroll};
 
-#[cfg(any(feature = "generate-bindings", feature = "compile-library"))]
 use std::{
+    env,
     path::{Path, PathBuf},
     fs::metadata,
 };
@@ -25,15 +26,54 @@ use self::LinkArg::*;
 
 fn main() {
     if !env::var("CARGO_FEATURE_RUSTDOC").is_ok() {
-        #[cfg(any(feature = "generate-bindings", feature = "compile-library"))]
         let out_dir = PathBuf::from(
             env::var("OUT_DIR").expect("OUT_DIR is set by cargo.")
         );
 
+        // guess target dir
+        let target_dir = out_dir
+            .parent().unwrap()
+            .parent().unwrap()
+            .parent().unwrap()
+            .parent().unwrap()
+            .parent().unwrap();
+
+        #[cfg(not(feature = "compile-library"))]
+        let prebuilt_dir = {
+            let profile = env::var("PROFILE")
+                .expect("PROFILE is set by cargo.");
+
+            let prebuilt_dir = target_dir.join(&profile).join("liboboe-ext");
+
+            // TODO: check contents
+            if !metadata(&prebuilt_dir)
+                .map(|meta| meta.is_dir())
+                .unwrap_or(false) {
+                    let prebuilt_url = format!(
+                        "{repo}/releases/download/{ver}/{pkg}_{prof}.tar.gz",
+                        repo = env::var("CARGO_PKG_REPOSITORY")
+                            .expect("Unfortunately CARGO_PKG_REPOSITORY is not set."),
+                        pkg = "liboboe-ext",
+                        ver = env::var("CARGO_PKG_VERSION")
+                            .expect("Unfortunately CARGO_PKG_VERSION is not set."),
+                        prof = &profile,
+                    );
+
+                    fetch_unroll(&prebuilt_url, &prebuilt_dir, fetch_unroll::Config::default())
+                        .map_err(|error| {
+                            format!("Unable to fetch prebuilt binaries from: \"{}\" due to: {}", prebuilt_url, error)
+                        })
+                        .unwrap();
+                }
+
+            prebuilt_dir
+        };
+
         #[cfg(any(feature = "generate-bindings", feature = "compile-library"))]
         let oboe_src = {
-            let oboe_src = out_dir.join("oboe-src");
+            let oboe_src = target_dir.join("oboe-src");
 
+            // TODO: check contents
             if !metadata(oboe_src.join(".git"))
                 .map(|meta| meta.is_dir())
                 .unwrap_or(false) {
@@ -52,7 +92,7 @@ fn main() {
 
         // select precompiled oboe library for specified target
         #[cfg(not(feature = "compile-library"))]
-        let link_args = select_library();
+        let link_args = select_library(&prebuilt_dir);
 
         for link_arg in link_args {
             match link_arg {
@@ -71,22 +111,16 @@ fn main() {
 }
 
 #[cfg(not(feature = "compile-library"))]
-fn select_library() -> Vec<LinkArg> {
+fn select_library(prebuilt_dir: &Path) -> Vec<LinkArg> {
     let target_arch = env::var("CARGO_CFG_TARGET_ARCH")
         .expect("CARGO_CFG_TARGET_ARCH is set by cargo.");
 
-    let lib_path = env::var("CARGO_MANIFEST_DIR")
-        .expect("CARGO_MANIFEST_DIR is set by cargo.");
-
     let lib_arch = rustc_target(&target_arch);
-
-    let lib_conf = env::var("PROFILE")
-        .expect("PROFILE is set by cargo.");
 
     let lib_name = "oboe-ext".into();
 
     vec![
-        SearchPath(format!("{}/lib/{}/{}", lib_path, lib_conf, lib_arch)),
+        SearchPath(prebuilt_dir.join(lib_arch).display().to_string()),
         if cfg!(feature = "static-link") { StaticLib(lib_name) } else { SharedLib(lib_name) },
     ]
 }

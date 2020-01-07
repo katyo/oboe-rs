@@ -4,6 +4,7 @@ lib ?= oboe
 crate ?= oboe-sys
 conf ?= release
 link ?= shared
+ver ?= 0.1.0
 
 arch = $(firstword $(subst -, ,$(1)))
 outpath = ../target/$(1)/$(conf)/build/$(crate)-*/out/$(2)
@@ -28,7 +29,12 @@ ifneq ($(call out,$(1)),)
 else
 	@echo No prebuild outputs for target:$(1) and config:$(conf)
 endif
+pack-out: copy-out-$(1)
 endef
+
+pack-out:
+	@mkdir -p ../target/prebuilt
+	@tar -czf ../target/prebuilt/$(crate)_$(ver)_$(conf).tar.gz -C lib/$(conf) .
 
 $(foreach target,$(TARGETS),$(eval $(call copy-target-rs,$(target))))
 

@@ -13,7 +13,7 @@ path = "../oboe"
 #features = ["generate-bindings", "compile-library"]
 #features = ["compile-library", "java-interface"]
 #features = ["compile-library", "generate-bindings", "java-interface"]
-features = ["compile-library", "java-interface"]
+features = ["java-interface"]
 
 [dependencies.apl]
 git = "https://github.com/katyo/mixui"
