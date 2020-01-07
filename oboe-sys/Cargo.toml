@@ -1,15 +1,17 @@
 [package]
 name = "oboe-sys"
 version = "0.1.0"
-description = "Raw bindings for oboe an android library for low latency audio IO"
+description = "Unsafe bindings for oboe an android library for low latency audio IO"
+categories = ["external-ffi-bindings", "multimedia::audio"]
+keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
 authors = ["K. <kayo@illumium.org>"]
 license = "Apache-2.0"
 repository = "https://github.com/katyo/oboe-rs"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 include = ["/lib/lib*.a", "/src/*.rs", "/oboe-ext", "/README.md"]
+
+[badges]
+maintenance = { status = "experimental" }
 
 [build-dependencies.git2]
 version = "0.11"

@@ -2,12 +2,15 @@
 name = "oboe"
 version = "0.1.0"
 description = "Safe interface for oboe an android library for low latency audio IO"
+categories = ["api-bindings", "multimedia::audio"]
+keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
 authors = ["K. <kayo@illumium.org>"]
 license = "Apache-2.0"
 repository = "https://github.com/katyo/oboe-rs"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[badges]
+maintenance = { status = "experimental" }
 
 [dependencies]
 num-traits = "0.2"
