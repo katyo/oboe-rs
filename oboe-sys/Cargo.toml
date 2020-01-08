@@ -6,6 +6,7 @@ categories = ["external-ffi-bindings", "multimedia::audio"]
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
 authors = ["K. <kayo@illumium.org>"]
 license = "Apache-2.0"
+readme = "README.md"
 repository = "https://github.com/katyo/oboe-rs"
 edition = "2018"
 include = ["/src/*.rs", "/oboe-ext", "/README.md"]

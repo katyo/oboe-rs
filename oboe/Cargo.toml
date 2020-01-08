@@ -6,6 +6,7 @@ categories = ["api-bindings", "multimedia::audio"]
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
 authors = ["K. <kayo@illumium.org>"]
 license = "Apache-2.0"
+readme = "README.md"
 repository = "https://github.com/katyo/oboe-rs"
 edition = "2018"
 include = ["/src/**/*.rs", "/README.md"]
@@ -23,12 +24,12 @@ path = "../oboe-sys"
 
 [dependencies.android-ndk]
 git = "https://github.com/rust-windowing/android-ndk-rs"
-version = "*"
+version = "0.0.6"
 optional = true
 
 [dependencies.android_glue]
 git = "https://github.com/rust-windowing/android-rs-glue"
-version = "*"
+version = "0.2.3"
 optional = true
 
 [dependencies.jni]
