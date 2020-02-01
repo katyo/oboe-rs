@@ -30,6 +30,9 @@ fn main() {
             env::var("OUT_DIR").expect("OUT_DIR is set by cargo.")
         );
 
+        let target = env::var("TARGET")
+            .expect("The TARGET is set by cargo.");
+
         // guess target dir
         let target_dir = out_dir
             .parent().unwrap()
@@ -131,10 +134,18 @@ fn select_library(prebuilt_dir: &Path) -> Vec<LinkArg> {
 }
 
 #[cfg(feature = "compile-library")]
-fn compile_library(oboe_src: &Path, oboe_ext: &Path) -> Vec<LinkArg> {
+fn compile_library(oboe_src: &Path, oboe_ext: &Path, target: &str) -> Vec<LinkArg> {
+    if let Err(_) = env::var(format!("CXX_{}", target)) {
+        if let Ok(cc) = env::var(format!("CC_{}", target)) {
+            env::set_var(format!("CXX_{}", target), cc.replace("clang", "clang++"));
+        }
+    }
+
     let library = cmake::Config::new(oboe_ext)
         .define("OBOE_DIR", oboe_src)
         .define("BUILD_SHARED_LIBS", if cfg!(feature = "static-link") { "0" } else { "1" })
+        .define("CMAKE_C_COMPILER_WORKS", "1")
+        .define("CMAKE_CXX_COMPILER_WORKS", "1")
         .always_configure(true)
         .very_verbose(true)
         .build_target("all")
