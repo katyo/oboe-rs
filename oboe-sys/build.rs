@@ -88,11 +88,16 @@ fn main() {
 
         // compiling oboe library and binding extensions
         #[cfg(feature = "compile-library")]
-        let link_args = compile_library(&oboe_src, &oboe_ext);
+        let mut link_args = compile_library(&oboe_src, &oboe_ext, &target);
 
         // select precompiled oboe library for specified target
         #[cfg(not(feature = "compile-library"))]
-        let link_args = select_library(&prebuilt_dir);
+        let mut link_args = select_library(&prebuilt_dir);
+
+        if cfg!(feature = "static-link") {
+            link_args.push(SharedLib("log".into()));
+            link_args.push(SharedLib("OpenSLES".into()));
+        }
 
         for link_arg in link_args {
             match link_arg {
