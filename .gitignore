@@ -2,4 +2,3 @@
 **/*.rs.bk
 Cargo.lock
 **/lib*.a
-**/bindings_*.rs
