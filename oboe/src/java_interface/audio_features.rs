@@ -44,7 +44,7 @@ impl AudioFeature {
     pub fn has(&self) -> Result<bool, String> {
         let activity = get_activity();
 
-        with_attached(&activity, |env, activity| {
+        with_attached(activity, |env, activity| {
             try_check_system_feature(env, activity, (*self).into())
         }).map_err(|error| error.to_string())
     }

@@ -26,7 +26,7 @@ impl DefaultStreamValues {
         if sdk_version < 17 {
             Err("Unimplemented".into())
         } else if sdk_version < 26 {
-            match with_attached(&activity, try_request_default_stream_values) {
+            match with_attached(activity, try_request_default_stream_values) {
                 Ok((sample_rate, frames_per_burst)) => {
                     if let Some(value) = sample_rate {
                         Self::set_sample_rate(value);

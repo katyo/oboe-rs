@@ -35,7 +35,7 @@ impl AudioDeviceInfo {
         let sdk_version = activity.sdk_version();
 
         if sdk_version >= 23 {
-            with_attached(&activity, |env, activity| {
+            with_attached(activity, |env, activity| {
                 try_request_devices_info(env, activity, direction)
             }).map_err(|error| error.to_string())
         } else {

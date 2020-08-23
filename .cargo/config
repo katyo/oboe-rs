@@ -1,4 +1,0 @@
-paths = [
-  "../android-ndk-rs",
-  "../android-rs-glue",
-]
