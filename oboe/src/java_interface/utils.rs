@@ -1,14 +1,10 @@
 use std::sync::Arc;
 
-use android_ndk::{
-    android_app::AndroidApp,
-};
-
 pub use jni::{
     Executor,
 };
 
-pub use android_ndk::{
+pub use ndk::{
     native_activity::NativeActivity,
 };
 
@@ -19,11 +15,8 @@ pub use jni::{
     errors::{Result as JResult},
 };
 
-pub fn get_activity() -> NativeActivity {
-    let app = unsafe {
-        AndroidApp::from_ptr(android_glue::get_android_app())
-    };
-    app.activity()
+pub fn get_activity() -> &'static NativeActivity {
+    ndk_glue::native_activity()
 }
 
 pub fn with_attached<F, R>(activity: &NativeActivity, closure: F) -> JResult<R>

@@ -22,14 +22,12 @@ num-derive = "0.3"
 version = "0.1.0"
 path = "../oboe-sys"
 
-[dependencies.android-ndk]
-git = "https://github.com/rust-windowing/android-ndk-rs"
-version = "0.0.6"
+[dependencies.ndk]
+version = "0.1"
 optional = true
 
-[dependencies.android_glue]
-git = "https://github.com/rust-windowing/android-rs-glue"
-version = "0.2.3"
+[dependencies.ndk-glue]
+version = "0.1"
 optional = true
 
 [dependencies.jni]
@@ -40,8 +38,8 @@ optional = true
 static-link = ["oboe-sys/static-link"]
 generate-bindings = ["oboe-sys/generate-bindings"]
 compile-library = ["oboe-sys/compile-library"]
-java-interface = ["android-ndk", "android_glue", "jni"]
-rustdoc = ["oboe-sys/rustdoc", "android-ndk/rustdoc", "java-interface"]
+java-interface = ["ndk", "ndk-glue", "jni"]
+rustdoc = ["oboe-sys/rustdoc", "ndk/rustdoc", "java-interface"]
 
 [package.metadata.docs.rs]
 features = ["rustdoc"]
