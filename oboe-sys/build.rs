@@ -99,8 +99,8 @@ fn main() {
 
         if cfg!(feature = "static-link") {
             link_args.push(SharedLib("log".into()));
-            link_args.push(SharedLib("OpenSLES".into()));
         }
+        link_args.push(SharedLib("OpenSLES".into()));
 
         for link_arg in link_args {
             match link_arg {
@@ -127,8 +127,19 @@ fn select_library(prebuilt_dir: &Path) -> Vec<LinkArg> {
 
     let lib_name = "oboe-ext".into();
 
+    let source_so = prebuilt_dir.join(lib_arch).join("liboboe-ext.so");
+
+    let out_dir = PathBuf::from(
+        env::var("OUT_DIR").expect("OUT_DIR is set by cargo.")
+    );
+    let target_so = out_dir
+        .parent().unwrap()
+        .parent().unwrap()
+        .parent().unwrap()
+        .join("deps")
+        .join("liboboe-ext.so");
+    std::fs::copy(source_so, target_so).expect("Failed to copy liboboe-ext.so");
     vec![
-        SearchPath(prebuilt_dir.join(lib_arch).display().to_string()),
         if cfg!(feature = "static-link") { StaticLib(lib_name) } else { SharedLib(lib_name) },
     ]
 }
