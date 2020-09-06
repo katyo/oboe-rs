@@ -99,8 +99,8 @@ fn main() {
 
         if cfg!(feature = "static-link") {
             link_args.push(SharedLib("log".into()));
-            link_args.push(SharedLib("OpenSLES".into()));
         }
+        link_args.push(SharedLib("OpenSLES".into()));
 
         for link_arg in link_args {
             match link_arg {
