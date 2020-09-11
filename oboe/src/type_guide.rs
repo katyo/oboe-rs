@@ -1,8 +1,4 @@
-use super::{
-    Direction,
-    AudioFormat,
-    ChannelCount,
-};
+use super::{AudioFormat, ChannelCount, Direction};
 
 /**
  * Unspecified marker type for use everywhere

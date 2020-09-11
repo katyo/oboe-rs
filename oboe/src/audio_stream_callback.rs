@@ -1,11 +1,8 @@
 use std::{
-    marker::PhantomData,
-    slice::{
-        from_raw_parts,
-        from_raw_parts_mut,
-    },
-    ops::{Deref, DerefMut},
     ffi::c_void,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    slice::{from_raw_parts, from_raw_parts_mut},
 };
 
 use oboe_sys as ffi;
@@ -13,13 +10,8 @@ use oboe_sys as ffi;
 use num_traits::FromPrimitive;
 
 use super::{
-    Error,
-    IsFrameType,
-    Input, Output,
-    DataCallbackResult,
-    AudioStreamRef,
-    AudioInputStream,
-    AudioOutputStream,
+    AudioInputStream, AudioOutputStream, AudioStreamRef, DataCallbackResult, Error, Input,
+    IsFrameType, Output,
 };
 
 /**
@@ -53,11 +45,7 @@ pub trait AudioInputCallback {
      * Do not close or delete the stream in this method because it will be
      * closed after this method returns.
      */
-    fn on_error_before_close(
-        &mut self,
-        _audio_stream: &mut dyn AudioInputStream,
-        _error: Error
-    ) {}
+    fn on_error_before_close(&mut self, _audio_stream: &mut dyn AudioInputStream, _error: Error) {}
 
     /**
      * This will be called when an error occurs on a stream or when the stream is disconnected.
@@ -68,11 +56,7 @@ pub trait AudioInputCallback {
      * This callback could be used to reopen a new stream on another device.
      * You can safely delete the old AudioStream in this method.
      */
-    fn on_error_after_close(
-        &mut self,
-        _audio_stream: &mut dyn AudioInputStream,
-        _error: Error
-    ) {}
+    fn on_error_after_close(&mut self, _audio_stream: &mut dyn AudioInputStream, _error: Error) {}
 
     /**
      * A buffer is ready for processing.
@@ -115,7 +99,7 @@ pub trait AudioInputCallback {
     fn on_audio_ready(
         &mut self,
         audio_stream: &mut dyn AudioInputStream,
-        audio_data: &[<Self::FrameType as IsFrameType>::Type]
+        audio_data: &[<Self::FrameType as IsFrameType>::Type],
     ) -> DataCallbackResult;
 }
 
@@ -150,11 +134,7 @@ pub trait AudioOutputCallback {
      * Do not close or delete the stream in this method because it will be
      * closed after this method returns.
      */
-    fn on_error_before_close(
-        &mut self,
-        _audio_stream: &mut dyn AudioOutputStream,
-        _error: Error
-    ) {}
+    fn on_error_before_close(&mut self, _audio_stream: &mut dyn AudioOutputStream, _error: Error) {}
 
     /**
      * This will be called when an error occurs on a stream or when the stream is disconnected.
@@ -165,11 +145,7 @@ pub trait AudioOutputCallback {
      * This callback could be used to reopen a new stream on another device.
      * You can safely delete the old AudioStream in this method.
      */
-    fn on_error_after_close(
-        &mut self,
-        _audio_stream: &mut dyn AudioOutputStream,
-        _error: Error
-    ) {}
+    fn on_error_after_close(&mut self, _audio_stream: &mut dyn AudioOutputStream, _error: Error) {}
 
     /**
      * A buffer is ready for processing.
@@ -209,23 +185,25 @@ pub trait AudioOutputCallback {
      * If you need to move data, eg. MIDI commands, in or out of the callback function then
      * we recommend the use of non-blocking techniques such as an atomic FIFO.
      */
-    fn on_audio_ready(&mut self,
-                      audio_stream: &mut dyn AudioOutputStream,
-                      audio_data: &mut [<Self::FrameType as IsFrameType>::Type]) -> DataCallbackResult;
+    fn on_audio_ready(
+        &mut self,
+        audio_stream: &mut dyn AudioOutputStream,
+        audio_data: &mut [<Self::FrameType as IsFrameType>::Type],
+    ) -> DataCallbackResult;
 }
 
 #[repr(transparent)]
 struct AudioStreamCallbackWrapperHandle(*mut ffi::oboe_AudioStreamCallbackWrapper);
 
 impl AudioStreamCallbackWrapperHandle {
-    fn new(audio_ready: ffi::oboe_AudioReadyHandler,
-           before_close: ffi::oboe_ErrorCloseHandler,
-           after_close: ffi::oboe_ErrorCloseHandler) -> Self {
-        Self(unsafe { ffi::oboe_AudioStreamCallbackWrapper_new(
-            audio_ready,
-            before_close,
-            after_close,
-        ) })
+    fn new(
+        audio_ready: ffi::oboe_AudioReadyHandler,
+        before_close: ffi::oboe_ErrorCloseHandler,
+        after_close: ffi::oboe_ErrorCloseHandler,
+    ) -> Self {
+        Self(unsafe {
+            ffi::oboe_AudioStreamCallbackWrapper_new(audio_ready, before_close, after_close)
+        })
     }
 }
 
@@ -276,9 +254,9 @@ where
             callback,
             _phantom: PhantomData,
         };
-        unsafe { (*wrapper.raw).setContext(
-            &mut (*wrapper.callback) as *mut _ as *mut c_void
-        ); }
+        unsafe {
+            (*wrapper.raw).setContext(&mut (*wrapper.callback) as *mut _ as *mut c_void);
+        }
         wrapper
     }
 }
@@ -298,9 +276,9 @@ where
             callback,
             _phantom: PhantomData,
         };
-        unsafe { (*wrapper.raw).setContext(
-            &mut (*wrapper.callback) as *mut _ as *mut c_void
-        ); }
+        unsafe {
+            (*wrapper.raw).setContext(&mut (*wrapper.callback) as *mut _ as *mut c_void);
+        }
         wrapper
     }
 }
@@ -313,10 +291,7 @@ unsafe extern "C" fn on_error_before_close_input_wrapper<T: AudioInputCallback>(
     let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
     let callback = &mut *(context as *mut T);
 
-    callback.on_error_before_close(
-        &mut audio_stream,
-        FromPrimitive::from_i32(error).unwrap()
-    );
+    callback.on_error_before_close(&mut audio_stream, FromPrimitive::from_i32(error).unwrap());
 }
 
 unsafe extern "C" fn on_error_after_close_input_wrapper<T: AudioInputCallback>(
@@ -327,10 +302,7 @@ unsafe extern "C" fn on_error_after_close_input_wrapper<T: AudioInputCallback>(
     let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
     let callback = &mut *(context as *mut T);
 
-    callback.on_error_after_close(
-        &mut audio_stream,
-        FromPrimitive::from_i32(error).unwrap()
-    );
+    callback.on_error_after_close(&mut audio_stream, FromPrimitive::from_i32(error).unwrap());
 }
 
 unsafe extern "C" fn on_audio_ready_input_wrapper<T: AudioInputCallback>(
@@ -348,10 +320,7 @@ unsafe extern "C" fn on_audio_ready_input_wrapper<T: AudioInputCallback>(
 
     let callback = &mut *(context as *mut T);
 
-    callback.on_audio_ready(
-        &mut audio_stream,
-        audio_data,
-    ) as i32
+    callback.on_audio_ready(&mut audio_stream, audio_data) as i32
 }
 
 unsafe extern "C" fn on_error_before_close_output_wrapper<T: AudioOutputCallback>(
@@ -363,10 +332,7 @@ unsafe extern "C" fn on_error_before_close_output_wrapper<T: AudioOutputCallback
 
     let callback = &mut *(context as *mut T);
 
-    callback.on_error_before_close(
-        &mut audio_stream,
-        FromPrimitive::from_i32(error).unwrap()
-    );
+    callback.on_error_before_close(&mut audio_stream, FromPrimitive::from_i32(error).unwrap());
 }
 
 unsafe extern "C" fn on_error_after_close_output_wrapper<T: AudioOutputCallback>(
@@ -377,10 +343,7 @@ unsafe extern "C" fn on_error_after_close_output_wrapper<T: AudioOutputCallback>
     let mut audio_stream = AudioStreamRef::wrap_raw(&mut *audio_stream);
     let callback = &mut *(context as *mut T);
 
-    callback.on_error_after_close(
-        &mut audio_stream,
-        FromPrimitive::from_i32(error).unwrap()
-    );
+    callback.on_error_after_close(&mut audio_stream, FromPrimitive::from_i32(error).unwrap());
 }
 
 unsafe extern "C" fn on_audio_ready_output_wrapper<T: AudioOutputCallback>(
@@ -398,8 +361,5 @@ unsafe extern "C" fn on_audio_ready_output_wrapper<T: AudioOutputCallback>(
 
     let callback = &mut *(context as *mut T);
 
-    callback.on_audio_ready(
-        &mut audio_stream,
-        audio_data,
-    ) as i32
+    callback.on_audio_ready(&mut audio_stream, audio_data) as i32
 }

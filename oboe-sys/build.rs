@@ -8,12 +8,12 @@ use bindgen;
 use cmake;
 
 #[cfg(not(feature = "compile-library"))]
-use fetch_unroll::{fetch_unroll};
+use fetch_unroll::fetch_unroll;
 
 use std::{
     env,
-    path::{Path, PathBuf},
     fs::metadata,
+    path::{Path, PathBuf},
 };
 
 enum LinkArg {
@@ -26,48 +26,57 @@ use self::LinkArg::*;
 
 fn main() {
     if !env::var("CARGO_FEATURE_RUSTDOC").is_ok() {
-        let out_dir = PathBuf::from(
-            env::var("OUT_DIR").expect("OUT_DIR is set by cargo.")
-        );
+        let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR is set by cargo."));
 
-        let target = env::var("TARGET")
-            .expect("The TARGET is set by cargo.");
+        let target = env::var("TARGET").expect("The TARGET is set by cargo.");
 
         // guess target dir
         let target_dir = out_dir
-            .parent().unwrap()
-            .parent().unwrap()
-            .parent().unwrap()
-            .parent().unwrap()
-            .parent().unwrap();
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap();
 
         #[cfg(not(feature = "compile-library"))]
         let prebuilt_dir = {
-            let profile = env::var("PROFILE")
-                .expect("PROFILE is set by cargo.");
+            let profile = env::var("PROFILE").expect("PROFILE is set by cargo.");
 
             let prebuilt_dir = target_dir.join(&profile).join("liboboe-ext");
 
             // TODO: check contents
             if !metadata(&prebuilt_dir)
                 .map(|meta| meta.is_dir())
-                .unwrap_or(false) {
-                    let prebuilt_url = format!(
-                        "{repo}/releases/download/{ver}/{pkg}_{prof}.tar.gz",
-                        repo = env::var("CARGO_PKG_REPOSITORY")
-                            .expect("Unfortunately CARGO_PKG_REPOSITORY is not set."),
-                        pkg = "liboboe-ext",
-                        ver = env::var("CARGO_PKG_VERSION")
-                            .expect("Unfortunately CARGO_PKG_VERSION is not set."),
-                        prof = &profile,
-                    );
+                .unwrap_or(false)
+            {
+                let prebuilt_url = format!(
+                    "{repo}/releases/download/{ver}/{pkg}_{prof}.tar.gz",
+                    repo = env::var("CARGO_PKG_REPOSITORY")
+                        .expect("Unfortunately CARGO_PKG_REPOSITORY is not set."),
+                    pkg = "liboboe-ext",
+                    ver = env::var("CARGO_PKG_VERSION")
+                        .expect("Unfortunately CARGO_PKG_VERSION is not set."),
+                    prof = &profile,
+                );
 
-                    fetch_unroll(&prebuilt_url, &prebuilt_dir, fetch_unroll::Config::default())
-                        .map_err(|error| {
-                            format!("Unable to fetch prebuilt binaries from: \"{}\" due to: {}", prebuilt_url, error)
-                        })
-                        .unwrap();
-                }
+                fetch_unroll(
+                    &prebuilt_url,
+                    &prebuilt_dir,
+                    fetch_unroll::Config::default(),
+                )
+                .map_err(|error| {
+                    format!(
+                        "Unable to fetch prebuilt binaries from: \"{}\" due to: {}",
+                        prebuilt_url, error
+                    )
+                })
+                .unwrap();
+            }
 
             prebuilt_dir
         };
@@ -79,9 +88,10 @@ fn main() {
             // TODO: check contents
             if !metadata(oboe_src.join(".git"))
                 .map(|meta| meta.is_dir())
-                .unwrap_or(false) {
-                    fetch_oboe(&oboe_src);
-                }
+                .unwrap_or(false)
+            {
+                fetch_oboe(&oboe_src);
+            }
 
             oboe_src
         };
@@ -97,7 +107,8 @@ fn main() {
         #[cfg(not(feature = "compile-library"))]
         let mut link_args = select_library(&prebuilt_dir);
 
-        if cfg!(feature = "static-link") {
+        #[cfg(feature = "static-link")]
+        {
             link_args.push(SharedLib("log".into()));
         }
         link_args.push(SharedLib("OpenSLES".into()));
@@ -120,8 +131,8 @@ fn main() {
 
 #[cfg(not(feature = "compile-library"))]
 fn select_library(prebuilt_dir: &Path) -> Vec<LinkArg> {
-    let target_arch = env::var("CARGO_CFG_TARGET_ARCH")
-        .expect("CARGO_CFG_TARGET_ARCH is set by cargo.");
+    let target_arch =
+        env::var("CARGO_CFG_TARGET_ARCH").expect("CARGO_CFG_TARGET_ARCH is set by cargo.");
 
     let lib_arch = rustc_target(&target_arch);
 
@@ -129,7 +140,11 @@ fn select_library(prebuilt_dir: &Path) -> Vec<LinkArg> {
 
     vec![
         SearchPath(prebuilt_dir.join(lib_arch).display().to_string()),
-        if cfg!(feature = "static-link") { StaticLib(lib_name) } else { SharedLib(lib_name) },
+        if cfg!(feature = "static-link") {
+            StaticLib(lib_name)
+        } else {
+            SharedLib(lib_name)
+        },
     ]
 }
 
@@ -143,7 +158,14 @@ fn compile_library(oboe_src: &Path, oboe_ext: &Path, target: &str) -> Vec<LinkAr
 
     let library = cmake::Config::new(oboe_ext)
         .define("OBOE_DIR", oboe_src)
-        .define("BUILD_SHARED_LIBS", if cfg!(feature = "static-link") { "0" } else { "1" })
+        .define(
+            "BUILD_SHARED_LIBS",
+            if cfg!(feature = "static-link") {
+                "0"
+            } else {
+                "1"
+            },
+        )
         .define("CMAKE_C_COMPILER_WORKS", "1")
         .define("CMAKE_CXX_COMPILER_WORKS", "1")
         .always_configure(true)
@@ -155,28 +177,32 @@ fn compile_library(oboe_src: &Path, oboe_ext: &Path, target: &str) -> Vec<LinkAr
 
     vec![
         SearchPath(format!("{}/build", lib_out)),
-        if cfg!(feature = "static-link") { StaticLib(lib_name) } else { SharedLib(lib_name) },
+        if cfg!(feature = "static-link") {
+            StaticLib(lib_name)
+        } else {
+            SharedLib(lib_name)
+        },
     ]
 }
 
 #[cfg(any(feature = "generate-bindings", feature = "compile-library"))]
-fn fetch_oboe(out_dir: &Path) { // clonning oboe git repo
+fn fetch_oboe(out_dir: &Path) {
+    // clonning oboe git repo
     let repo = "https://github.com/google/oboe";
     let version = "master";
 
-    let url = env::var("OBOE_GIT_URL")
-        .unwrap_or_else(|_| repo.into());
-    let tag = env::var("OBOE_GIT_TAG")
-        .unwrap_or_else(|_| version.into());
+    let url = env::var("OBOE_GIT_URL").unwrap_or_else(|_| repo.into());
+    let tag = env::var("OBOE_GIT_TAG").unwrap_or_else(|_| version.into());
 
     eprintln!("git clone to: {}", &out_dir.display());
 
-    let _repo = match RepoBuilder::new()
-        .branch(&tag)
-        .clone(&url, out_dir) {
-            Ok(repo) => repo,
-            Err(error) => panic!("Unable to fetch oboe library from git due to {}. url={} tag={}", error, url, tag),
-        };
+    let _repo = match RepoBuilder::new().branch(&tag).clone(&url, out_dir) {
+        Ok(repo) => repo,
+        Err(error) => panic!(
+            "Unable to fetch oboe library from git due to {}. url={} tag={}",
+            error, url, tag
+        ),
+    };
 }
 
 #[cfg(not(feature = "compile-library"))]
@@ -203,11 +229,10 @@ fn android_target<S: AsRef<str>>(target_arch: &S) -> &'static str {
 
 #[cfg(feature = "generate-bindings")]
 fn generate_bindings(oboe_src: &Path, oboe_ext: &Path, out_file: &Path) {
-    let target_os = env::var("CARGO_CFG_TARGET_OS")
-        .expect("CARGO_CFG_TARGET_OS is set by cargo.");
+    let target_os = env::var("CARGO_CFG_TARGET_OS").expect("CARGO_CFG_TARGET_OS is set by cargo.");
 
-    let target_arch = env::var("CARGO_CFG_TARGET_ARCH")
-        .expect("CARGO_CFG_TARGET_ARCH is set by cargo.");
+    let target_arch =
+        env::var("CARGO_CFG_TARGET_ARCH").expect("CARGO_CFG_TARGET_ARCH is set by cargo.");
 
     let mut clang_args = Vec::new();
 
@@ -223,15 +248,18 @@ fn generate_bindings(oboe_src: &Path, oboe_ext: &Path, out_file: &Path) {
     let bindings = bindgen::Builder::default()
         .detect_include_paths(true)
         .clang_args(&clang_args)
-        .clang_args(&[
-            "-xc++",
-            "-std=c++14",
-        ])
+        .clang_args(&["-xc++", "-std=c++14"])
         .clang_args(&[
             format!("-I{}", oboe_ext_include.display()),
             format!("-I{}", oboe_src_include.display()),
         ])
-        .header(oboe_ext_include.join("oboe").join("OboeExt.h").display().to_string())
+        .header(
+            oboe_ext_include
+                .join("oboe")
+                .join("OboeExt.h")
+                .display()
+                .to_string(),
+        )
         .whitelist_type("oboe::ChannelCount")
         .whitelist_type("oboe::AudioStreamBase")
         .whitelist_type("oboe::AudioStream")

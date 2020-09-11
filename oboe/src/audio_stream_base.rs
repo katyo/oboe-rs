@@ -4,17 +4,8 @@ use num_traits::FromPrimitive;
 use std::fmt::{self, Display};
 
 use super::{
-    ChannelCount,
-    Direction,
-    AudioFormat,
-    SharingMode,
-    PerformanceMode,
-    Usage,
-    ContentType,
-    InputPreset,
-    SessionId,
-    SampleRateConversionQuality,
-    RawAudioStreamBase,
+    AudioFormat, ChannelCount, ContentType, Direction, InputPreset, PerformanceMode,
+    RawAudioStreamBase, SampleRateConversionQuality, SessionId, SharingMode, Usage,
 };
 
 /**
@@ -180,7 +171,10 @@ impl<T: RawAudioStreamBase> AudioStreamBase for T {
     }
 }
 
-pub(crate) fn audio_stream_base_fmt<T: AudioStreamBase>(base: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+pub(crate) fn audio_stream_base_fmt<T: AudioStreamBase>(
+    base: &T,
+    f: &mut fmt::Formatter<'_>,
+) -> fmt::Result {
     "DeviceId: ".fmt(f)?;
     base.get_device_id().fmt(f)?;
     "\nSessionId: ".fmt(f)?;

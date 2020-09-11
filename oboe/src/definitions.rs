@@ -1,7 +1,7 @@
-use std::{error, result, fmt};
 use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::{FromPrimitive};
+use num_traits::FromPrimitive;
 use oboe_sys as ffi;
+use std::{error, fmt, result};
 
 /**
  * The number of nanoseconds in a microsecond. 1,000.
@@ -505,7 +505,9 @@ impl DefaultStreamValues {
     }
 
     pub fn set_sample_rate(sample_rate: i32) {
-        unsafe { ffi::oboe_DefaultStreamValues_SampleRate = sample_rate; }
+        unsafe {
+            ffi::oboe_DefaultStreamValues_SampleRate = sample_rate;
+        }
     }
 
     /**
@@ -516,7 +518,9 @@ impl DefaultStreamValues {
     }
 
     pub fn set_frames_per_burst(frames_per_burst: i32) {
-        unsafe { ffi::oboe_DefaultStreamValues_FramesPerBurst = frames_per_burst; }
+        unsafe {
+            ffi::oboe_DefaultStreamValues_FramesPerBurst = frames_per_burst;
+        }
     }
 
     /**
@@ -527,7 +531,9 @@ impl DefaultStreamValues {
     }
 
     pub fn set_channel_count(channel_count: i32) {
-        unsafe { ffi::oboe_DefaultStreamValues_ChannelCount = channel_count; }
+        unsafe {
+            ffi::oboe_DefaultStreamValues_ChannelCount = channel_count;
+        }
     }
 }
 

@@ -1,15 +1,9 @@
 use super::{
-    PackageManager,
-
     utils::{
-        JNIEnv,
-        JObject,
+        get_activity, get_package_manager, has_system_feature, with_attached, JNIEnv, JObject,
         JResult,
-        get_activity,
-        with_attached,
-        get_package_manager,
-        has_system_feature,
     },
+    PackageManager,
 };
 
 /**
@@ -46,11 +40,16 @@ impl AudioFeature {
 
         with_attached(activity, |env, activity| {
             try_check_system_feature(env, activity, (*self).into())
-        }).map_err(|error| error.to_string())
+        })
+        .map_err(|error| error.to_string())
     }
 }
 
-fn try_check_system_feature<'a>(env: &JNIEnv<'a>, activity: JObject, feature: &str) -> JResult<bool> {
+fn try_check_system_feature<'a>(
+    env: &JNIEnv<'a>,
+    activity: JObject,
+    feature: &str,
+) -> JResult<bool> {
     let package_manager = get_package_manager(env, activity)?;
 
     has_system_feature(env, package_manager, feature)

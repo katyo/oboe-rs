@@ -1,31 +1,13 @@
-use std::{
-    marker::PhantomData,
-    f32::consts::PI,
-};
+use std::{f32::consts::PI, marker::PhantomData};
 
-use apl::{
-    EventHandler,
-    Platform,
-    AppConfig,
-};
+use apl::{AppConfig, EventHandler, Platform};
 
-use sgl::{HasContext, Context};
+use sgl::{Context, HasContext};
 
 use oboe::{
-    DefaultStreamValues,
-    AudioFeature,
-    AudioDeviceInfo,
-    AudioDeviceDirection,
-    AudioStreamBuilder,
-    PerformanceMode,
-    SharingMode,
-    Mono, Output,
-
-    AudioStream,
-    AudioOutputStream,
-    AudioOutputCallback,
-    AudioStreamAsync,
-    DataCallbackResult,
+    AudioDeviceDirection, AudioDeviceInfo, AudioFeature, AudioOutputCallback, AudioOutputStream,
+    AudioStream, AudioStreamAsync, AudioStreamBuilder, DataCallbackResult, DefaultStreamValues,
+    Mono, Output, PerformanceMode, SharingMode,
 };
 
 pub struct Application<G: HasContext> {
@@ -52,8 +34,14 @@ impl<G: HasContext> EventHandler for Application<G> {
 
         println!("Default stream values:");
         println!("  Sample rate: {}", DefaultStreamValues::get_sample_rate());
-        println!("  Frames per burst: {}", DefaultStreamValues::get_frames_per_burst());
-        println!("  Channel count: {}", DefaultStreamValues::get_channel_count());
+        println!(
+            "  Frames per burst: {}",
+            DefaultStreamValues::get_frames_per_burst()
+        );
+        println!(
+            "  Channel count: {}",
+            DefaultStreamValues::get_channel_count()
+        );
 
         println!("Audio features:");
         println!("  Low latency: {}", AudioFeature::LowLatency.has().unwrap());
@@ -62,8 +50,7 @@ impl<G: HasContext> EventHandler for Application<G> {
         println!("  Microphone: {}", AudioFeature::Microphone.has().unwrap());
         println!("  Midi: {}", AudioFeature::Midi.has().unwrap());
 
-        let devices = AudioDeviceInfo::request(AudioDeviceDirection::InputOutput)
-            .unwrap();
+        let devices = AudioDeviceInfo::request(AudioDeviceDirection::InputOutput).unwrap();
 
         println!("Audio Devices:");
 
@@ -133,11 +120,19 @@ impl Drop for SineWave {
 impl AudioOutputCallback for SineWave {
     type FrameType = (f32, Mono);
 
-    fn on_audio_ready(&mut self, stream: &mut dyn AudioOutputStream, frames: &mut [f32]) -> DataCallbackResult {
+    fn on_audio_ready(
+        &mut self,
+        stream: &mut dyn AudioOutputStream,
+        frames: &mut [f32],
+    ) -> DataCallbackResult {
         if self.delta.is_none() {
             let sample_rate = stream.get_sample_rate() as f32;
             self.delta = (self.frequency * 2.0 * PI / sample_rate).into();
-            println!("Prepare sine wave generator: samplerate={}, time delta={}", sample_rate, self.delta.unwrap());
+            println!(
+                "Prepare sine wave generator: samplerate={}, time delta={}",
+                sample_rate,
+                self.delta.unwrap()
+            );
         }
 
         let delta = self.delta.unwrap();

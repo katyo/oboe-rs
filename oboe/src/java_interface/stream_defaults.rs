@@ -1,16 +1,8 @@
 use super::{
-    Context,
-    AudioManager,
-
     utils::{
-        JNIEnv,
-        JObject,
-        JResult,
-        get_activity,
-        with_attached,
-        get_system_service,
-        get_property,
+        get_activity, get_property, get_system_service, with_attached, JNIEnv, JObject, JResult,
     },
+    AudioManager, Context,
 };
 
 use crate::DefaultStreamValues;
@@ -35,8 +27,8 @@ impl DefaultStreamValues {
                         Self::set_frames_per_burst(value);
                     }
                     Ok(())
-                },
-                Err(error) => Err(error.to_string())
+                }
+                Err(error) => Err(error.to_string()),
             }
         } else {
             // not necessary
@@ -45,24 +37,29 @@ impl DefaultStreamValues {
     }
 }
 
-fn try_request_default_stream_values<'a>(env: &JNIEnv<'a>, activity: JObject) -> JResult<(Option<i32>, Option<i32>)> {
-    let audio_manager = get_system_service(
-        env, activity,
-        Context::AUDIO_SERVICE,
-    )?;
+fn try_request_default_stream_values<'a>(
+    env: &JNIEnv<'a>,
+    activity: JObject,
+) -> JResult<(Option<i32>, Option<i32>)> {
+    let audio_manager = get_system_service(env, activity, Context::AUDIO_SERVICE)?;
 
     let sample_rate = get_property(
-        env, audio_manager,
-        AudioManager::PROPERTY_OUTPUT_SAMPLE_RATE
+        env,
+        audio_manager,
+        AudioManager::PROPERTY_OUTPUT_SAMPLE_RATE,
     )?;
 
     let frames_per_burst = get_property(
-        env, audio_manager,
-        AudioManager::PROPERTY_OUTPUT_FRAMES_PER_BUFFER
+        env,
+        audio_manager,
+        AudioManager::PROPERTY_OUTPUT_FRAMES_PER_BUFFER,
     )?;
 
     Ok((
         (*sample_rate).to_str().ok().and_then(|s| s.parse().ok()),
-        (*frames_per_burst).to_str().ok().and_then(|s| s.parse().ok()),
+        (*frames_per_burst)
+            .to_str()
+            .ok()
+            .and_then(|s| s.parse().ok()),
     ))
 }

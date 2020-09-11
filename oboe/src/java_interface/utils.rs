@@ -1,18 +1,14 @@
 use std::sync::Arc;
 
-pub use jni::{
-    Executor,
-};
+pub use jni::Executor;
 
-pub use ndk::{
-    native_activity::NativeActivity,
-};
+pub use ndk::native_activity::NativeActivity;
 
 pub use jni::{
-    JavaVM, JNIEnv,
-    objects::{JObject, JList, JValue},
+    errors::Result as JResult,
+    objects::{JList, JObject, JValue},
     strings::JavaStr,
-    errors::{Result as JResult},
+    JNIEnv, JavaVM,
 };
 
 pub fn get_activity() -> &'static NativeActivity {
@@ -28,13 +24,12 @@ where
     Executor::new(vm).with_attached(|env| closure(env, activity.into()))
 }
 
-pub fn call_method_no_args_ret_int_array<'a>(env: &JNIEnv<'a>, subject: JObject, method: &str) -> JResult<Vec<i32>> {
-    let array = env.auto_local(env.call_method(
-        subject,
-        method,
-        "()[I",
-        &[],
-    )?.l()?);
+pub fn call_method_no_args_ret_int_array<'a>(
+    env: &JNIEnv<'a>,
+    subject: JObject,
+    method: &str,
+) -> JResult<Vec<i32>> {
+    let array = env.auto_local(env.call_method(subject, method, "()[I", &[])?.l()?);
 
     let raw_array = array.as_obj().into_inner();
 
@@ -46,78 +41,100 @@ pub fn call_method_no_args_ret_int_array<'a>(env: &JNIEnv<'a>, subject: JObject,
     Ok(values)
 }
 
-pub fn call_method_no_args_ret_int<'a>(env: &JNIEnv<'a>, subject: JObject, method: &str) -> JResult<i32> {
-    env.call_method(
-        subject,
-        method,
-        "()I",
-        &[],
-    )?.i()
+pub fn call_method_no_args_ret_int<'a>(
+    env: &JNIEnv<'a>,
+    subject: JObject,
+    method: &str,
+) -> JResult<i32> {
+    env.call_method(subject, method, "()I", &[])?.i()
 }
 
-pub fn call_method_no_args_ret_bool<'a>(env: &JNIEnv<'a>, subject: JObject, method: &str) -> JResult<bool> {
-    env.call_method(
-        subject,
-        method,
-        "()Z",
-        &[],
-    )?.z()
+pub fn call_method_no_args_ret_bool<'a>(
+    env: &JNIEnv<'a>,
+    subject: JObject,
+    method: &str,
+) -> JResult<bool> {
+    env.call_method(subject, method, "()Z", &[])?.z()
 }
 
-pub fn call_method_no_args_ret_string<'a>(env: &JNIEnv<'a>, subject: JObject, method: &str) -> JResult<String> {
+pub fn call_method_no_args_ret_string<'a>(
+    env: &JNIEnv<'a>,
+    subject: JObject,
+    method: &str,
+) -> JResult<String> {
+    env.get_string(
+        env.call_method(subject, method, "()Ljava/lang/String;", &[])?
+            .l()?
+            .into(),
+    )
+    .map(String::from)
+}
+
+pub fn call_method_no_args_ret_char_sequence<'a>(
+    env: &JNIEnv<'a>,
+    subject: JObject,
+    method: &str,
+) -> JResult<String> {
     env.get_string(
         env.call_method(
-            subject,
-            method,
-            "()Ljava/lang/String;",
-            &[],
-        )?.l()?.into()
-    ).map(String::from)
-}
-
-pub fn call_method_no_args_ret_char_sequence<'a>(env: &JNIEnv<'a>, subject: JObject, method: &str) -> JResult<String> {
-    env.get_string(
-        env.call_method(
-            env.call_method(
-                subject,
-                method,
-                "()Ljava/lang/CharSequence;",
-                &[],
-            )?.l()?,
+            env.call_method(subject, method, "()Ljava/lang/CharSequence;", &[])?
+                .l()?,
             "toString",
             "()Ljava/lang/String;",
             &[],
-        )?.l()?.into()
-    ).map(String::from)
+        )?
+        .l()?
+        .into(),
+    )
+    .map(String::from)
 }
 
-pub fn call_method_string_arg_ret_bool<'a, S: AsRef<str>>(env: &JNIEnv<'a>, subject: JObject, name: &str, arg: S) -> JResult<bool> {
+pub fn call_method_string_arg_ret_bool<'a, S: AsRef<str>>(
+    env: &JNIEnv<'a>,
+    subject: JObject,
+    name: &str,
+    arg: S,
+) -> JResult<bool> {
     env.call_method(
         subject,
         name,
         "(Ljava/lang/String;)Z",
         &[JObject::from(env.new_string(arg)?).into()],
-    )?.z()
+    )?
+    .z()
 }
 
-pub fn call_method_string_arg_ret_string<'a: 'b, 'b, S: AsRef<str>>(env: &'b JNIEnv<'a>, subject: JObject, name: &str, arg: S) -> JResult<JavaStr<'a, 'b>> {
+pub fn call_method_string_arg_ret_string<'a: 'b, 'b, S: AsRef<str>>(
+    env: &'b JNIEnv<'a>,
+    subject: JObject,
+    name: &str,
+    arg: S,
+) -> JResult<JavaStr<'a, 'b>> {
     env.get_string(
         env.call_method(
             subject,
             name,
             "(Ljava/lang/String;)Ljava/lang/String;",
             &[JObject::from(env.new_string(arg)?).into()],
-        )?.l()?.into()
+        )?
+        .l()?
+        .into(),
     )
 }
 
-pub fn call_method_string_arg_ret_object<'a>(env: &JNIEnv<'a>, subject: JObject, method: &str, arg: &str) -> JResult<JObject<'a>> {
+pub fn call_method_string_arg_ret_object<'a>(
+    env: &JNIEnv<'a>,
+    subject: JObject,
+    method: &str,
+    arg: &str,
+) -> JResult<JObject<'a>> {
     env.call_method(
         subject,
         method,
         "(Ljava/lang/String;)Ljava/lang/Object;",
         &[JObject::from(env.new_string(arg)?).into()],
-    )?.l()
+    )?
+    .l()
 }
 
 pub fn get_package_manager<'a>(env: &JNIEnv<'a>, subject: JObject) -> JResult<JObject<'a>> {
@@ -126,26 +143,40 @@ pub fn get_package_manager<'a>(env: &JNIEnv<'a>, subject: JObject) -> JResult<JO
         "getPackageManager",
         "()Landroid/content/pm/PackageManager;",
         &[],
-    )?.l()
+    )?
+    .l()
 }
 
 pub fn has_system_feature<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<bool> {
     call_method_string_arg_ret_bool(env, subject, "hasSystemFeature", name)
 }
 
-pub fn get_system_service<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<JObject<'a>> {
+pub fn get_system_service<'a>(
+    env: &JNIEnv<'a>,
+    subject: JObject,
+    name: &str,
+) -> JResult<JObject<'a>> {
     call_method_string_arg_ret_object(env, subject, "getSystemService", name)
 }
 
-pub fn get_property<'a: 'b, 'b>(env: &'b JNIEnv<'a>, subject: JObject, name: &str) -> JResult<JavaStr<'a, 'b>> {
+pub fn get_property<'a: 'b, 'b>(
+    env: &'b JNIEnv<'a>,
+    subject: JObject,
+    name: &str,
+) -> JResult<JavaStr<'a, 'b>> {
     call_method_string_arg_ret_string(env, subject, "getProperty", name)
 }
 
-pub fn get_devices<'a: 'b, 'b>(env: &'b JNIEnv<'a>, subject: JObject, flags: i32) -> JResult<JObject<'a>> {
+pub fn get_devices<'a: 'b, 'b>(
+    env: &'b JNIEnv<'a>,
+    subject: JObject,
+    flags: i32,
+) -> JResult<JObject<'a>> {
     env.call_method(
         subject,
         "getDevices",
         "(I)[Landroid/media/AudioDeviceInfo;",
         &[flags.into()],
-    )?.l()
+    )?
+    .l()
 }

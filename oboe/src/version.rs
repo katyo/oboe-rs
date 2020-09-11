@@ -1,5 +1,5 @@
-use std::str::from_utf8_unchecked;
 use oboe_sys as ffi;
+use std::str::from_utf8_unchecked;
 
 /**
  * The version info
