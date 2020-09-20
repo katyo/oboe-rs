@@ -650,10 +650,10 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
 }
 #[doc = " Factory class for an audio Stream."]
 #[repr(C)]
-#[derive(Debug)]
+#[repr(align(4))]
+#[derive(Debug, Copy, Clone)]
 pub struct oboe_AudioStreamBuilder {
-    pub _base: oboe_AudioStreamBase,
-    pub mAudioApi: oboe_AudioApi,
+    pub _bindgen_opaque_blob: [u32; 20usize],
 }
 #[test]
 fn bindgen_test_layout_oboe_AudioStreamBuilder() {
@@ -666,18 +666,6 @@ fn bindgen_test_layout_oboe_AudioStreamBuilder() {
         ::std::mem::align_of::<oboe_AudioStreamBuilder>(),
         4usize,
         concat!("Alignment of ", stringify!(oboe_AudioStreamBuilder))
-    );
-    assert_eq!(
-        unsafe {
-            &(*(::std::ptr::null::<oboe_AudioStreamBuilder>())).mAudioApi as *const _ as usize
-        },
-        76usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(oboe_AudioStreamBuilder),
-            "::",
-            stringify!(mAudioApi)
-        )
     );
 }
 extern "C" {
@@ -1193,100 +1181,6 @@ extern "C" {
         numFrames: i32,
     ) -> oboe_DataCallbackResult;
 }
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe22AudioStreamBuilder_newEv"]
-    pub fn oboe_AudioStreamBuilder_new() -> *mut oboe_AudioStreamBuilder;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe25AudioStreamBuilder_deleteEPNS_18AudioStreamBuilderE"]
-    pub fn oboe_AudioStreamBuilder_delete(builder: *mut oboe_AudioStreamBuilder);
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe18AudioStream_deleteEPNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_delete(oboeStream: *mut oboe_AudioStream);
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe16AudioStream_openEPNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_open(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe24AudioStream_requestStartEPNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_requestStart(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe24AudioStream_requestPauseEPNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_requestPause(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe24AudioStream_requestFlushEPNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_requestFlush(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe23AudioStream_requestStopEPNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_requestStop(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe20AudioStream_getStateEPKNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_getState(oboeStream: *const oboe_AudioStream) -> oboe_StreamState;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe30AudioStream_waitForStateChangeEPNS_11AudioStreamENS_11StreamStateEPS2_x"]
-    pub fn oboe_AudioStream_waitForStateChange(
-        oboeStream: *mut oboe_AudioStream,
-        inputState: oboe_StreamState,
-        nextState: *mut oboe_StreamState,
-        timeoutNanoseconds: i64,
-    ) -> oboe_Result;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe33AudioStream_setBufferSizeInFramesEPNS_11AudioStreamEi"]
-    pub fn oboe_AudioStream_setBufferSizeInFrames(
-        oboeStream: *mut oboe_AudioStream,
-        requestedFrames: i32,
-    ) -> oboe_ResultWithValue<i32>;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe24AudioStream_getXRunCountEPKNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_getXRunCount(
-        oboeStream: *const oboe_AudioStream,
-    ) -> oboe_ResultWithValue<i32>;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe32AudioStream_isXRunCountSupportedEPKNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_isXRunCountSupported(oboeStream: *const oboe_AudioStream) -> bool;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe29AudioStream_getFramesPerBurstEPNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_getFramesPerBurst(oboeStream: *mut oboe_AudioStream) -> i32;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe34AudioStream_calculateLatencyMillisEPNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_calculateLatencyMillis(
-        oboeStream: *mut oboe_AudioStream,
-    ) -> oboe_ResultWithValue<f64>;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe23AudioStream_getAudioApiEPKNS_11AudioStreamE"]
-    pub fn oboe_AudioStream_getAudioApi(oboeStream: *const oboe_AudioStream) -> oboe_AudioApi;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe16AudioStream_readEPNS_11AudioStreamEPvix"]
-    pub fn oboe_AudioStream_read(
-        oboeStream: *mut oboe_AudioStream,
-        buffer: *mut ::std::os::raw::c_void,
-        numFrames: i32,
-        timeoutNanoseconds: i64,
-    ) -> oboe_ResultWithValue<i32>;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe17AudioStream_writeEPNS_11AudioStreamEPKvix"]
-    pub fn oboe_AudioStream_write(
-        oboeStream: *mut oboe_AudioStream,
-        buffer: *const ::std::os::raw::c_void,
-        numFrames: i32,
-        timeoutNanoseconds: i64,
-    ) -> oboe_ResultWithValue<i32>;
-}
 pub type oboe_AudioReadyHandler = ::std::option::Option<
     unsafe extern "C" fn(
         context: *mut ::std::os::raw::c_void,
@@ -1451,11 +1345,118 @@ extern "C" {
     pub fn oboe_AudioStreamCallbackWrapper_delete(callback: *mut oboe_AudioStreamCallbackWrapper);
 }
 extern "C" {
+    #[link_name = "\u{1}_ZN4oboe22AudioStreamBuilder_newEv"]
+    pub fn oboe_AudioStreamBuilder_new() -> *mut oboe_AudioStreamBuilder;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe25AudioStreamBuilder_deleteEPNS_18AudioStreamBuilderE"]
+    pub fn oboe_AudioStreamBuilder_delete(builder: *mut oboe_AudioStreamBuilder);
+}
+extern "C" {
     #[link_name = "\u{1}_ZN4oboe30AudioStreamBuilder_setCallbackEPNS_18AudioStreamBuilderEPNS_26AudioStreamCallbackWrapperE"]
     pub fn oboe_AudioStreamBuilder_setCallback(
         builder: *mut oboe_AudioStreamBuilder,
         callback: *mut oboe_AudioStreamCallbackWrapper,
     );
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe30AudioStreamBuilder_getAudioApiEPKNS_18AudioStreamBuilderE"]
+    pub fn oboe_AudioStreamBuilder_getAudioApi(
+        builder: *const oboe_AudioStreamBuilder,
+    ) -> oboe_AudioApi;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe30AudioStreamBuilder_setAudioApiEPNS_18AudioStreamBuilderENS_8AudioApiE"]
+    pub fn oboe_AudioStreamBuilder_setAudioApi(
+        builder: *mut oboe_AudioStreamBuilder,
+        api: oboe_AudioApi,
+    );
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe18AudioStream_deleteEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_delete(oboeStream: *mut oboe_AudioStream);
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe16AudioStream_openEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_open(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe24AudioStream_requestStartEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_requestStart(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe24AudioStream_requestPauseEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_requestPause(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe24AudioStream_requestFlushEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_requestFlush(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe23AudioStream_requestStopEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_requestStop(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe20AudioStream_getStateEPKNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_getState(oboeStream: *const oboe_AudioStream) -> oboe_StreamState;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe30AudioStream_waitForStateChangeEPNS_11AudioStreamENS_11StreamStateEPS2_x"]
+    pub fn oboe_AudioStream_waitForStateChange(
+        oboeStream: *mut oboe_AudioStream,
+        inputState: oboe_StreamState,
+        nextState: *mut oboe_StreamState,
+        timeoutNanoseconds: i64,
+    ) -> oboe_Result;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe33AudioStream_setBufferSizeInFramesEPNS_11AudioStreamEi"]
+    pub fn oboe_AudioStream_setBufferSizeInFrames(
+        oboeStream: *mut oboe_AudioStream,
+        requestedFrames: i32,
+    ) -> oboe_ResultWithValue<i32>;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe24AudioStream_getXRunCountEPKNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_getXRunCount(
+        oboeStream: *const oboe_AudioStream,
+    ) -> oboe_ResultWithValue<i32>;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe32AudioStream_isXRunCountSupportedEPKNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_isXRunCountSupported(oboeStream: *const oboe_AudioStream) -> bool;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe29AudioStream_getFramesPerBurstEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_getFramesPerBurst(oboeStream: *mut oboe_AudioStream) -> i32;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe34AudioStream_calculateLatencyMillisEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_calculateLatencyMillis(
+        oboeStream: *mut oboe_AudioStream,
+    ) -> oboe_ResultWithValue<f64>;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe23AudioStream_getAudioApiEPKNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_getAudioApi(oboeStream: *const oboe_AudioStream) -> oboe_AudioApi;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe16AudioStream_readEPNS_11AudioStreamEPvix"]
+    pub fn oboe_AudioStream_read(
+        oboeStream: *mut oboe_AudioStream,
+        buffer: *mut ::std::os::raw::c_void,
+        numFrames: i32,
+        timeoutNanoseconds: i64,
+    ) -> oboe_ResultWithValue<i32>;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe17AudioStream_writeEPNS_11AudioStreamEPKvix"]
+    pub fn oboe_AudioStream_write(
+        oboeStream: *mut oboe_AudioStream,
+        buffer: *const ::std::os::raw::c_void,
+        numFrames: i32,
+        timeoutNanoseconds: i64,
+    ) -> oboe_ResultWithValue<i32>;
 }
 pub type __kernel_clockid_t = ::std::os::raw::c_int;
 pub type __clockid_t = __kernel_clockid_t;
