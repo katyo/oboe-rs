@@ -34,12 +34,12 @@ fn main() {
         #[cfg(feature = "static-link")]
         {
             add_lib("log", true);
-            add_lib("liboboe", true);
+            add_lib("oboe-ext", true);
         }
 
         #[cfg(not(feature = "static-link"))]
         {
-            add_lib("liboboe-ext", false);
+            add_lib("oboe-ext", false);
         }
 
         add_lib("OpenSLES", false);
@@ -209,7 +209,9 @@ impl Builder {
 
     #[cfg(not(feature = "compile-library"))]
     pub fn library(&self) {
-        if self.lib_dir.is_dir() {
+        let lib_file = self.lib_dir.join("liboboe-ext.so");
+
+        if lib_file.is_file() {
             eprintln!(
                 "Prebuilt library {} already fetched to {}",
                 self.lib_url,
