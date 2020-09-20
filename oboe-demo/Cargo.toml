@@ -1,11 +1,13 @@
 [package]
 name = "oboe-demo"
-version = "0.1.0"
+description = "Simple sine-wave playing demo"
+version = "0.1.2"
 authors = ["K. <kayo@illumium.org>"]
 edition = "2018"
 publish = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib"]
 
 [dependencies.oboe]
 path = "../oboe"
@@ -14,12 +16,24 @@ path = "../oboe"
 #features = ["compile-library", "java-interface"]
 #features = ["compile-library", "generate-bindings", "java-interface"]
 features = ["java-interface"]
+optional = true
 
-[dependencies.apl]
-git = "https://github.com/katyo/mixui"
+[dependencies.ndk-glue]
+version = "0.2.0"
+features = ["logger"]
 
-[dependencies.sgl]
-git = "https://github.com/katyo/mixui"
+[dependencies.android_logger]
+version = "0.8"
+
+[dependencies.log]
+version = "0.4"
+
+[dependencies.glutin]
+version = "0.24"
+
+[features]
+default = ["audio"]
+audio = ["oboe"]
 
 [package.metadata.android]
 android_version = 28
@@ -34,7 +48,7 @@ build_targets = [ "armv7-linux-androideabi", "aarch64-linux-android", "i686-linu
 package_name = "org.illumium.rust-oboe-demo"
 label = "Android oboe demo"
 version_code = 100
-version_name = "0.1.0"
+version_name = "0.1.2"
 #res = "res"
 #icon = "@mipmap/ic_launcher"
 fullscreen = false
