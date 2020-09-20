@@ -197,6 +197,7 @@ impl Builder {
             .blacklist_function("oboe::AudioStreamBuilder_openStream1")
             .blacklist_function("oboe::AudioStreamBuilder_openManagedStream")
             .opaque_type("oboe::AudioStream")
+            .opaque_type("oboe::AudioStreamBuilder")
             .opaque_type("oboe::LatencyTuner")
             .generate()
             .expect("Unable to generate bindings");

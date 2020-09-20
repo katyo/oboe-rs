@@ -635,11 +635,11 @@ impl<D, F> AudioStreamAsync<D, F> {
 
 impl<D, T> RawAudioStreamBase for AudioStreamAsync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&(&*self.raw)) }
+        unsafe { transmute(&&*self.raw) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&mut (&mut *self.raw)) }
+        unsafe { transmute(&mut &mut *self.raw) }
     }
 }
 
@@ -682,11 +682,11 @@ impl<D, F> AudioStreamSync<D, F> {
 
 impl<D, T> RawAudioStreamBase for AudioStreamSync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&(&*self.raw)) }
+        unsafe { transmute(&&*self.raw) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&mut (&mut *self.raw)) }
+        unsafe { transmute(&mut &mut *self.raw) }
     }
 }
 
