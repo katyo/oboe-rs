@@ -136,7 +136,7 @@ pub trait AudioStream: AudioStreamBase {
      * Note that generally applications do not need to call this. It is considered
      * an advanced technique and is mostly used for testing.
      *
-     * ```
+     * ```ignore
      * const TIMEOUT_NANOS: i64 = 500 * NANOS_PER_MILLISECOND; // arbitrary 1/2 second
      * let mut current_state = stream.get_state();
      * loop {
