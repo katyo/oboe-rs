@@ -52,12 +52,12 @@ jobs:
 
     - name: Run tests
       run: |
-        cd oboe-sys && cargo test --features test && cd ..
-        cd oboe && cargo test --features rustdoc --doc && cd ..
+        cargo test --manifest-path oboe-sys/Cargo.toml --features test
+        cargo test --manifest-path oboe/Cargo.toml --features rustdoc --doc
         # cargo test -p oboe
     - name: Install cargo-apk
       run:
-        cargo install --path cargo-apk
+        cargo install cargo-apk
 
     - name: Check compiling on target ${{ matrix.rust-target }}
       run: |
