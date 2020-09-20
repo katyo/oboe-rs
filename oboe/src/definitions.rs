@@ -537,14 +537,11 @@ impl DefaultStreamValues {
     }
 }
 
-#[cfg(not(feature = "rustdoc"))]
-pub type FrameTimestamp = ffi::oboe_FrameTimestamp;
-
 /**
  * The time at which the frame at `position` was presented
  */
-#[cfg(feature = "rustdoc")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct FrameTimestamp {
     /**
      * The position in number of frames

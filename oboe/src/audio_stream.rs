@@ -4,7 +4,7 @@ use std::{
     ffi::c_void,
     fmt::{self, Display},
     marker::PhantomData,
-    mem::MaybeUninit,
+    mem::{transmute, MaybeUninit},
     ops::{Deref, DerefMut},
     ptr::null_mut,
 };
@@ -458,10 +458,10 @@ impl<T: RawAudioStream + RawAudioStreamBase> AudioStream for T {
 
     fn get_timestamp(&mut self, clock_id: i32 /* clockid_t */) -> Result<FrameTimestamp> {
         wrap_result(unsafe {
-            ffi::oboe_AudioStream_getTimestamp(
+            transmute(ffi::oboe_AudioStream_getTimestamp(
                 self._raw_stream_mut() as *mut _ as *mut c_void,
                 clock_id,
-            )
+            ))
         })
     }
 
@@ -583,11 +583,11 @@ impl<'s, D> AudioStreamRef<'s, D> {
 
 impl<'s, D> RawAudioStreamBase for AudioStreamRef<'s, D> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &self.raw._base
+        unsafe { transmute(&self.raw) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut self.raw._base
+        unsafe { transmute(&mut self.raw) }
     }
 }
 
@@ -635,21 +635,21 @@ impl<D, F> AudioStreamAsync<D, F> {
 
 impl<D, T> RawAudioStreamBase for AudioStreamAsync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &(&*self.raw)._base
+        unsafe { transmute(&(&*self.raw)) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut (&mut *self.raw)._base
+        unsafe { transmute(&mut (&mut *self.raw)) }
     }
 }
 
 impl<D, F> RawAudioStream for AudioStreamAsync<D, F> {
     fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        &*self.raw
+        unsafe { transmute(&*self.raw) }
     }
 
     fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        &mut *self.raw
+        unsafe { transmute(&mut *self.raw) }
     }
 }
 
@@ -682,11 +682,11 @@ impl<D, F> AudioStreamSync<D, F> {
 
 impl<D, T> RawAudioStreamBase for AudioStreamSync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &(&*self.raw)._base
+        unsafe { transmute(&(&*self.raw)) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut (&mut *self.raw)._base
+        unsafe { transmute(&mut (&mut *self.raw)) }
     }
 }
 
