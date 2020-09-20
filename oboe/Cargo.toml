@@ -35,7 +35,7 @@ version = "0.14"
 optional = true
 
 [features]
-static-link = ["oboe-sys/static-link"]
+shared-link = ["oboe-sys/shared-link"]
 generate-bindings = ["oboe-sys/generate-bindings"]
 compile-library = ["oboe-sys/compile-library"]
 java-interface = ["ndk", "ndk-glue", "jni"]

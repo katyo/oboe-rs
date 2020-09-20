@@ -27,7 +27,7 @@ version = "0.55"
 optional = true
 
 [features]
-static-link = []
+shared-link = []
 generate-bindings = ["bindgen"]
 compile-library = ["cmake"]
 rustdoc = []

@@ -31,16 +31,13 @@ fn main() {
 
         add_libdir(out_dir);
 
-        #[cfg(feature = "static-link")]
+        #[cfg(not(feature = "shared-link"))]
         {
-            add_lib("log", true);
-            add_lib("oboe-ext", true);
+            add_lib("log", false);
+            add_lib("c++_static", false);
         }
 
-        #[cfg(not(feature = "static-link"))]
-        {
-            add_lib("oboe-ext", false);
-        }
+        add_lib("oboe-ext", !cfg!(feature = "shared-link"));
 
         add_lib("OpenSLES", false);
     }
@@ -212,7 +209,7 @@ impl Builder {
 
     #[cfg(not(any(feature = "compile-library", feature = "rustdoc", feature = "test")))]
     pub fn library(&self) {
-        let lib_file = self.lib_dir.join("liboboe-ext.so");
+        let lib_file = self.lib_dir.join("liboboe-ext.a");
 
         if lib_file.is_file() {
             eprintln!(
@@ -253,10 +250,10 @@ impl Builder {
             .define("OBOE_DIR", &self.src_dir)
             .define(
                 "BUILD_SHARED_LIBS",
-                if cfg!(feature = "static-link") {
-                    "0"
+                if cfg!(feature = "shared-link") {
+                    "ON"
                 } else {
-                    "1"
+                    "OFF"
                 },
             )
             .define("CMAKE_C_COMPILER_WORKS", "1")
