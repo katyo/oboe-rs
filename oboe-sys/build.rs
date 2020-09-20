@@ -207,7 +207,10 @@ impl Builder {
             .expect("Couldn't write bindings!");
     }
 
-    #[cfg(not(feature = "compile-library"))]
+    #[cfg(any(feature = "rustdoc", feature = "test"))]
+    pub fn library(&self) {}
+
+    #[cfg(not(any(feature = "compile-library", feature = "rustdoc", feature = "test")))]
     pub fn library(&self) {
         let lib_file = self.lib_dir.join("liboboe-ext.so");
 
