@@ -29,4 +29,8 @@ namespace oboe {
                                       AudioStreamCallbackWrapper *callback) {
     builder->setCallback(callback);
   }
+
+  AudioStreamBase* AudioStreamBuilder_getBase(AudioStreamBuilder *builder) {
+    return static_cast<AudioStreamBase*>(builder);
+  }
 }

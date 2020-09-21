@@ -84,4 +84,8 @@ namespace oboe {
                                              int64_t timeoutNanoseconds) {
     return oboeStream->write(buffer, numFrames, timeoutNanoseconds);
   }
+
+  AudioStreamBase* AudioStream_getBase(AudioStream *oboeStream) {
+    return static_cast<AudioStreamBase*>(oboeStream);
+  }
 }

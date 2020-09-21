@@ -58,6 +58,7 @@ namespace oboe {
                                       AudioStreamCallbackWrapper *callback);
   AudioApi AudioStreamBuilder_getAudioApi(const AudioStreamBuilder *builder);
   void AudioStreamBuilder_setAudioApi(AudioStreamBuilder *builder, AudioApi api);
+  AudioStreamBase* AudioStreamBuilder_getBase(AudioStreamBuilder *builder);
 
   void AudioStream_delete(AudioStream *oboeStream);
   Result AudioStream_open(AudioStream *oboeStream);
@@ -88,6 +89,8 @@ namespace oboe {
                                              const void* buffer,
                                              int32_t numFrames,
                                              int64_t timeoutNanoseconds);
+
+  AudioStreamBase* AudioStream_getBase(AudioStream *oboeStream);
 }
 
 #endif

@@ -1373,6 +1373,12 @@ extern "C" {
     );
 }
 extern "C" {
+    #[link_name = "\u{1}_ZN4oboe26AudioStreamBuilder_getBaseEPNS_18AudioStreamBuilderE"]
+    pub fn oboe_AudioStreamBuilder_getBase(
+        builder: *mut oboe_AudioStreamBuilder,
+    ) -> *mut oboe_AudioStreamBase;
+}
+extern "C" {
     #[link_name = "\u{1}_ZN4oboe18AudioStream_deleteEPNS_11AudioStreamE"]
     pub fn oboe_AudioStream_delete(oboeStream: *mut oboe_AudioStream);
 }
@@ -1457,6 +1463,11 @@ extern "C" {
         numFrames: i32,
         timeoutNanoseconds: i64,
     ) -> oboe_ResultWithValue<i32>;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe19AudioStream_getBaseEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_getBase(oboeStream: *mut oboe_AudioStream)
+        -> *mut oboe_AudioStreamBase;
 }
 pub type __kernel_clockid_t = ::std::os::raw::c_int;
 pub type __clockid_t = __kernel_clockid_t;

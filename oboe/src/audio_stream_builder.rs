@@ -3,7 +3,7 @@ use oboe_sys as ffi;
 use std::{
     fmt,
     marker::PhantomData,
-    mem::{transmute, MaybeUninit},
+    mem::MaybeUninit,
     ops::{Deref, DerefMut},
 };
 
@@ -61,11 +61,11 @@ impl<D, C, T> fmt::Debug for AudioStreamBuilder<D, C, T> {
 
 impl<D, C, T> RawAudioStreamBase for AudioStreamBuilder<D, C, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&*self.raw) }
+        unsafe { &*ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&mut *self.raw) }
+        unsafe { &mut *ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
     }
 }
 
@@ -553,11 +553,11 @@ impl<D, F> fmt::Debug for AudioStreamBuilderAsync<D, F> {
 
 impl<D, F> RawAudioStreamBase for AudioStreamBuilderAsync<D, F> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&*self.raw) }
+        unsafe { &*ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&mut *self.raw) }
+        unsafe { &mut *ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
     }
 }
 
