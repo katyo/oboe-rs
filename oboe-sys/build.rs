@@ -29,7 +29,7 @@ fn main() {
         builder.bindings();
         builder.library();
 
-        add_libdir(out_dir);
+        add_libdir(builder.lib_dir);
 
         #[cfg(not(feature = "shared-link"))]
         {
@@ -89,8 +89,8 @@ impl Builder {
 
         let out_dir = out_dir.as_ref();
 
-        let src_dir = out_dir.join(format!("{}-{}", package, version));
-        let lib_dir = out_dir.into();
+        let src_dir = out_dir.join("source");
+        let lib_dir = out_dir.join("library");
 
         let ext_dir = ext_dir.as_ref().into();
 
@@ -209,9 +209,7 @@ impl Builder {
 
     #[cfg(not(any(feature = "compile-library", feature = "rustdoc", feature = "test")))]
     pub fn library(&self) {
-        let lib_file = self.lib_dir.join("liboboe-ext.a");
-
-        if lib_file.is_file() {
+        if self.lib_dir.is_dir() {
             eprintln!(
                 "Prebuilt library {} already fetched to {}",
                 self.lib_url,
@@ -233,7 +231,7 @@ impl Builder {
 
     #[cfg(feature = "compile-library")]
     pub fn library(&self) {
-        use std::fs::copy;
+        use std::fs::{copy, create_dir_all};
 
         self.fetch();
 
@@ -264,6 +262,10 @@ impl Builder {
             .very_verbose(true)
             .build_target("all")
             .build();
+
+        if !self.lib_dir.is_dir() {
+            create_dir_all(&self.lib_dir).unwrap();
+        }
 
         for lib in &["liboboe-ext.a", "liboboe-ext.so"] {
             let src = library.join("build").join(lib);
