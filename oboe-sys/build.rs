@@ -17,7 +17,7 @@ fn main() {
 
         let builder = Builder::new(
             "oboe",
-            "10bb6fa",
+            "b781ef7",
             target,
             profile,
             "https://github.com/google/{package}/archive/{version}.tar.gz",
@@ -256,8 +256,6 @@ impl Builder {
             )
             .define("CMAKE_C_COMPILER_WORKS", "1")
             .define("CMAKE_CXX_COMPILER_WORKS", "1")
-            // TODO: Remove after merging https://github.com/google/oboe/pull/1020
-            .cxxflag("-D__ANDROID_API_R__=30")
             .always_configure(true)
             .very_verbose(true)
             .build_target("all")
