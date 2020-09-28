@@ -1,90 +1,203 @@
 name: Rust
-
-on: [push, pull_request]
-
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-    - name: Format
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --all -- --check
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-rust_stable-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-rust_stable-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-build-rust_stable-docs-${{ hashFiles('**/Cargo.lock') }}
+      - name: Documentation
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --manifest-path oboe/Cargo.toml --features rustdoc
 
   build:
+    needs:
+      - format
+      - docs
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: ${{ github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') }}
       matrix:
-        rust-channel: ['stable', 'nightly']
-        rust-target: [
-            'armv7-linux-androideabi',
-            'aarch64-linux-android',
-            'i686-linux-android',
-            'x86_64-linux-android',
-        ]
-
+        rust:
+          - stable
+          - nightly
+        target:
+          - armv7-linux-androideabi
+          - aarch64-linux-android
+          - i686-linux-android
+          - x86_64-linux-android
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - name: Setup JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      - name: Setup Android NDK
+        run: sdkmanager --sdk_root=$ANDROID_SDK_ROOT ndk-bundle
+      - name: Setup Rust ${{ matrix.rust }} [${{ matrix.target }}]
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          override: true
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-rust_${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-build-rust_${{ matrix.rust }}-build_debug-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build target ${{ matrix.target }}
+        uses: actions-rs/cargo@v1
+        env:
+          CC: ${{ env.ANDROID_SDK_ROOT }}/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang
+          AR: ${{ env.ANDROID_SDK_ROOT }}/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+        with:
+          command: build
+          args: --manifest-path oboe/Cargo.toml --target ${{ matrix.target }}
 
-    - name: Download NDK
-      run: |
-        curl -LO https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip
-        unzip android-ndk-r20-linux-x86_64.zip -d $GITHUB_WORKSPACE
-    - name: Setup java
-      uses: actions/setup-java@v1
-      with:
-        java-package: jre # Runtime new enough for android toolchain
-        java-version: '13'
+  test:
+    needs:
+      - format
+      - docs
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: ${{ github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') }}
+      matrix:
+        rust:
+          - stable
+          - nightly
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-rust_${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-build-rust_${{ matrix.rust }}-test-${{ hashFiles('**/Cargo.lock') }}
+      - name: Run sys tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path oboe-sys/Cargo.toml --features test
+      - name: Run doc tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path oboe/Cargo.toml --features rustdoc
 
-    - name: Installing Rust ${{ matrix.rust-channel }} w/ ${{ matrix.rust-target }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust-channel }}
-        target: ${{ matrix.rust-target }}
-        override: true
-
-    - name: Run tests
-      run: |
-        cargo test --manifest-path oboe-sys/Cargo.toml --features test
-        cargo test --manifest-path oboe/Cargo.toml --features rustdoc --doc
-        # cargo test -p oboe
-
-    #- name: Install cargo-apk
-    #  run:
-    #    cargo install cargo-apk
-
-    - name: Check compiling on target ${{ matrix.rust-target }}
-      run: |
-        export NDK_HOME="$GITHUB_WORKSPACE/android-ndk-r20"
-        export CC="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
-        export AR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-        cargo check -p oboe --target ${{ matrix.rust-target }}
-        # cargo apk build -p oboe-demo --target ${{ matrix.rust-target }} --examples
-
-  deploy:
-    needs: [format, build]
+  build-demo:
+    needs:
+      - build
+      - test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-    - name: Publish packages
-      if: |
-        startsWith(matrix.config.os, 'ubuntu') &&
-        github.repository == 'katyo/oboe' &&
-        startsWith(github.ref, 'refs/tags/')
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
-      run: |
-        cargo publish --manifest-path oboe-sys/Cargo.toml --no-verify --dry-run
-        sleep 30
-        cargo publish --manifest-path oboe/Cargo.toml --no-verify --dry-run
+      - uses: actions/checkout@v2
+      - name: Setup JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      - name: Setup Android NDK
+        run: sdkmanager --sdk_root=${ANDROID_SDK_ROOT} ndk-bundle
+      - name: Setup Rust
+        uses: hecrj/setup-rust-action@v1
+        with:
+          targets: armv7-linux-androideabi, aarch64-linux-android, i686-linux-android, x86_64-linux-android
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-demo_apk-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-build-demo_apk-${{ hashFiles('**/Cargo.lock') }}
+      - name: Setup cargo apk
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-apk
+      - name: Build demo apk
+        uses: actions-rs/cargo@v1
+        with:
+          command: apk
+          args: build --package oboe-demo --release
+      - name: Upload demo apk
+        uses: actions/upload-artifact@v2
+        with:
+          name: apk
+          path: target/release/apk/oboe-demo.apk
+
+  publish:
+    needs:
+      - build-demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Publish crates
+        uses: katyo/publish-crates@v1
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+        with:
+          args: --no-verify
+          dry-run: ${{ !(github.repository == 'katyo/oboe' && startsWith(github.ref, 'refs/tags/v')) }}
