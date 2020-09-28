@@ -12,16 +12,16 @@ fn main() {
         let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR is set by cargo."));
         let ext_dir = Path::new("oboe-ext");
 
-        let target = env::var("TARGET").expect("The TARGET is set by cargo.");
+        let target = env::var("TARGET").expect("TARGET is set by cargo.");
         let profile = env::var("PROFILE").expect("PROFILE is set by cargo.");
 
         let builder = Builder::new(
             "oboe",
-            "b781ef7",
+            env!("CARGO_PKG_VERSION"),
             target,
             profile,
-            "https://github.com/google/{package}/archive/{version}.tar.gz",
-            "https://github.com/katyo/{package}-rs/releases/download/lib{package}-ext_0.1.2/{target}_{profile}.tar.gz",
+            "https://github.com/google/{package}/archive/8a0601f.tar.gz",
+            "https://github.com/katyo/{package}-rs/releases/download/lib{package}-ext_{version}/{target}_{profile}.tar.gz",
             &out_dir,
             ext_dir,
         );
