@@ -21,7 +21,7 @@ fn main() {
             target,
             profile,
             "https://github.com/google/{package}/archive/8a0601f.tar.gz",
-            "https://github.com/katyo/{package}-rs/releases/download/lib{package}-ext_{version}/{target}_{profile}.tar.gz",
+            "https://github.com/katyo/{package}-rs/releases/download/{version}/lib{package}-ext_{target}_{profile}.tar.gz",
             &out_dir,
             ext_dir,
         );
