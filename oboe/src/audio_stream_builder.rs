@@ -61,11 +61,11 @@ impl<D, C, T> fmt::Debug for AudioStreamBuilder<D, C, T> {
 
 impl<D, C, T> RawAudioStreamBase for AudioStreamBuilder<D, C, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &(*self.raw)._base
+        unsafe { &*ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut (*self.raw)._base
+        unsafe { &mut *ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
     }
 }
 
@@ -223,7 +223,8 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * returns true. Otherwise __OpenSL ES__ will be used.
      */
     pub fn get_audio_api(&self) -> AudioApi {
-        FromPrimitive::from_i32((*self.raw).mAudioApi).unwrap()
+        FromPrimitive::from_i32(unsafe { ffi::oboe_AudioStreamBuilder_getAudioApi(&*self.raw) })
+            .unwrap()
     }
 
     /**
@@ -237,7 +238,7 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * If the caller requests AAudio and it is supported then AAudio will be used.
      */
     pub fn set_audio_api(mut self, audio_api: AudioApi) -> Self {
-        (*self.raw).mAudioApi = audio_api as i32;
+        unsafe { ffi::oboe_AudioStreamBuilder_setAudioApi(&mut *self.raw, audio_api as i32) }
         self
     }
 
@@ -552,11 +553,11 @@ impl<D, F> fmt::Debug for AudioStreamBuilderAsync<D, F> {
 
 impl<D, F> RawAudioStreamBase for AudioStreamBuilderAsync<D, F> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        &(*self.raw)._base
+        unsafe { &*ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        &mut (*self.raw)._base
+        unsafe { &mut *ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
     }
 }
 

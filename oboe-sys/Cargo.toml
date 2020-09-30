@@ -1,6 +1,6 @@
 [package]
 name = "oboe-sys"
-version = "0.1.0"
+version = "0.2.0"
 description = "Unsafe bindings for oboe an android library for low latency audio IO"
 categories = ["external-ffi-bindings", "multimedia::audio"]
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
@@ -15,26 +15,23 @@ include = ["/src/*.rs", "/oboe-ext", "/README.md"]
 maintenance = { status = "experimental" }
 
 [build-dependencies.fetch_unroll]
-version = "0.1"
+version = "0.2"
 #optional = true
-
-[build-dependencies.git2]
-version = "0.11"
-optional = true
 
 [build-dependencies.cmake]
 version = "0.1"
 optional = true
 
 [build-dependencies.bindgen]
-version = "0.52"
+version = "0.55"
 optional = true
 
 [features]
-static-link = []
-generate-bindings = ["bindgen", "git2"]
-compile-library = ["cmake", "git2"]
+shared-link = []
+generate-bindings = ["bindgen"]
+compile-library = ["cmake"]
 rustdoc = []
+test = []
 
 [package.metadata.docs.rs]
 features = ["rustdoc"]

@@ -14,8 +14,7 @@
 
 ## Crate features
 
-The *oboe* and *oboe-sys* already have pregenerated bindings
-and precompiled library for the following Android targets:
+The *oboe-sys* already has pregenerated bindings and precompiled static libraries for the following Android targets:
 
 * _armv7_
 * _aarch64_
@@ -25,6 +24,7 @@ and precompiled library for the following Android targets:
 In case when you want to generate bindings and/or compile library
 youself you can use features below:
 
+* _java-interface_ which adds interface for some Android platform APIs
 * _generate-bindings_ which runs bindgen to generate bindings
 * _compile-library_ which runs cmake to compile _oboe_ C++ library
 
@@ -41,11 +41,11 @@ In case of using tools with libclang under the hood like __bindgen__
 you must be sure in proper your setup. Otherwise you get an errors
 related to missing headers or definitions.
 
-To build applications you need recent version of __cargo-apk__ from git,
+To build applications you need recent version of __cargo-apk__,
 which supports latest Android [SDK](https://developer.android.com/studio#command-tools) (28+) and [NDK](https://developer.android.com/ndk) (20+).
-Don't forget to set ANDROID_HOME and NDK_HOME environment variables with paths to installed SDK and NDK.
+Don't forget to set ANDROID_SDK_ROOT environment variable with paths to installed SDK.
 
-For building host crates which requires _C_-compiler you usually should
+For building host crates which requires _C_-compiler you may
 also set __HOST_CC__ environment variable with path to your _C_-compiler.
 
 ## Usage example

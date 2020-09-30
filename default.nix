@@ -1,24 +1,49 @@
 { pkgs ? import <nixpkgs> {} }:
 with pkgs;
-let toolchain_path = "toolchains/llvm/prebuilt/linux-x86_64";
-in stdenv.mkDerivation rec {
-  name = "oboe";
+let
+  androidComposition = androidenv.composeAndroidPackages {
+    #toolsVersion = "25.2.5";
+    platformToolsVersion = "29.0.6";
+    buildToolsVersions = [ "28.0.3" ];
+    includeEmulator = true;
+    #emulatorVersion = "27.2.0";
+    platformVersions = [ "16" "28" ];
+    #includeSources = false;
+    #includeDocs = false;
+    includeSystemImages = false;
+    systemImageTypes = [ "default" ];
+    abiVersions = [ "x86" "x86_64" "armeabi-v7a" "arm64-v8a" ];
+    #lldbVersions = [ "2.0.2558144" ];
+    #cmakeVersions = [ "3.6.4111459" ];
+    includeNDK = true;
+    #ndkVersion = "20";
+    useGoogleAPIs = false;
+    useGoogleTVAddOns = false;
+    includeExtras = [
+      #"extras;google;gcm"
+    ];
+  };
+  androidsdk = androidComposition.androidsdk;
+  sdk_root = "${androidsdk}/libexec/android-sdk";
+  ndk_root = "${sdk_root}/ndk-bundle";
+  ndk_path = "${ndk_root}/toolchains/llvm/prebuilt/linux-x86_64/bin";
+in mkShell rec {
+  # cargo apk
+  ANDROID_SDK_ROOT = "${sdk_root}";
+  ANDROID_NDK_ROOT = "${ndk_root}";
 
-  ANDROID_HOME = "${builtins.getEnv "HOME"}/.androidenv";
-  NDK_HOME = "${ANDROID_HOME}/ndk/20.1.5948944";
-  ANDROID_NDK = NDK_HOME;
+  # cargo ndk 
+  ANDROID_SDK_HOME = "${sdk_root}";
 
-  LD_LIBRARY_PATH = "${zlib}/lib:${ncurses5}/lib";
+  # llvm-config for libclang
+  ##PATH = "${ndk_path}:${builtins.getEnv "PATH"}";
+  shellHook = ''
+    export PATH="${ndk_path}:$PATH";
+  '';
 
-  PATH = "${NDK_HOME}/${toolchain_path}/bin:${builtins.getEnv "PATH"}";
+  # reduce resources usage
+  DART_VM_OPTIONS = "--old_gen_heap_size=256 --observe";
+  GRADLE_OPTS = "-Xmx64m -Dorg.gradle.jvmargs='-Xmx256m -XX:MaxPermSize=64m'";
 
-  HOST_CC = "${clang}/bin/clang";
-
-  buildInputs = [
-    pkgconfig
-    zlib
-    ncurses5
-    openssl
-    cmake
-  ];
+  buildInputs = [ pkgconfig openssl zlib ncurses5 cmake libssh2 libgit2 ];
 }

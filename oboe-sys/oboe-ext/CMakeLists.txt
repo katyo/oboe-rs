@@ -29,9 +29,11 @@ set(oboe_sources
     src/fifo/FifoControllerBase.cpp
     src/fifo/FifoControllerIndirect.cpp
     src/flowgraph/FlowGraphNode.cpp
+    src/flowgraph/ChannelCountConverter.cpp
     src/flowgraph/ClipToRange.cpp
     src/flowgraph/ManyToMultiConverter.cpp
     src/flowgraph/MonoToMultiConverter.cpp
+    src/flowgraph/MultiToMonoConverter.cpp
     src/flowgraph/RampLinear.cpp
     src/flowgraph/SampleRateConverter.cpp
     src/flowgraph/SinkFloat.cpp

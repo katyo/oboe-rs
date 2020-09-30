@@ -1,68 +1,305 @@
 name: Rust
-
-on: [push, pull_request]
-
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
 jobs:
-  formatting:
+  format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-    - name: Format
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --all -- --check
+      - uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-rust_stable-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-rust_stable-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build cache
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-build-rust_stable-docs-${{ hashFiles('**/Cargo.lock') }}
+      - name: Documentation
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --manifest-path oboe/Cargo.toml --features rustdoc
 
   build:
+    needs:
+      - format
+      - docs
+      - cargo-ndk
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: ${{ github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') }}
       matrix:
-        rust-channel: ['stable', 'nightly']
-        rust-target: [
-            'armv7-linux-androideabi',
-            'aarch64-linux-android',
-            'i686-linux-android',
-            'x86_64-linux-android',
-        ]
-
+        rust:
+          - stable
+          - nightly
+        profile:
+          - debug
+          - release
+        target:
+          - armv7-linux-androideabi
+          - aarch64-linux-android
+          - i686-linux-android
+          - x86_64-linux-android
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - name: Setup JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      - name: Setup Android NDK
+        run: |
+          sdkmanager --sdk_root=$ANDROID_SDK_ROOT ndk-bundle
+          echo "::add-path::$ANDROID_SDK_ROOT/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin"
+      - name: Setup Rust ${{ matrix.rust }} [${{ matrix.target }}]
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          override: true
+      - name: Setup Cargo ndk
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/bin/cargo-ndk
+          key: ${{ runner.os }}-cargo-ndk
+      - name: Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-rust_${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build cache
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-build-rust_${{ matrix.rust }}-target_${{ matrix.target }}-profile_${{ matrix.profile }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Prepare config
+        id: config
+        run: |
+          if [[ "${{ matrix.target }}" =~ "64" ]]; then
+            echo "::set-output name=android-api::21"
+          else
+            echo "::set-output name=android-api::16"
+          fi
+          if [[ "${{ matrix.profile }}" == "release" ]]; then
+            echo "::set-output name=cargo-args::--release"
+          else
+            echo "::set-output name=cargo-args::"
+          fi
+      - name: Build target ${{ matrix.target }}
+        uses: actions-rs/cargo@v1
+        env:
+          ANDROID_SDK_HOME: ${{ env.ANDROID_SDK_ROOT }}
+        with:
+          command: ndk
+          args: --android-platform ${{ steps.config.outputs.android-api }} --target ${{ matrix.target }} -- build --manifest-path oboe/Cargo.toml ${{ steps.config.outputs.cargo-args }} --features generate-bindings,compile-library
+      - name: Get latest build path
+        id: result
+        run: |
+          echo "::set-output name=build-path::$(ls -td target/${{ matrix.target }}/${{ matrix.profile }}/build/oboe-sys-*/ | head -1)"
+      - name: Copy bindings
+        if: matrix.rust == 'stable' && matrix.profile == 'release'
+        run: |
+          mkdir -p bindings
+          cp ${{ steps.result.outputs.build-path }}out/bindings.rs bindings/bindings_$(echo ${{ matrix.target }} | sed -r 's/^([^-]+).*$/\1/').rs
+      - name: Upload bindings
+        if: matrix.rust == 'stable' && matrix.profile == 'release'
+        uses: actions/upload-artifact@v2
+        with:
+          name: bindings
+          path: bindings
+      - name: Archive library
+        if: matrix.rust == 'stable'
+        run: tar -czf liboboe-ext_${{ matrix.target }}_${{ matrix.profile }}.tar.gz -C ${{ steps.result.outputs.build-path }}/out/library liboboe-ext.a
+      - name: Upload library
+        if: matrix.rust == 'stable'
+        uses: actions/upload-artifact@v2
+        with:
+          name: library
+          path: liboboe-ext_${{ matrix.target }}_${{ matrix.profile }}.tar.gz
 
-    - name: Download NDK
-      run: |
-        curl -LO https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip
-        unzip android-ndk-r20-linux-x86_64.zip -d $GITHUB_WORKSPACE
-    - name: Setup java
-      uses: actions/setup-java@v1
-      with:
-        java-package: jre # Runtime new enough for android toolchain
-        java-version: '13'
+  update-bindings:
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download bindings
+        uses: actions/download-artifact@v2
+        with:
+          name: bindings
+          path: oboe-sys/src
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          base: ${{ github.head_ref }}
+          commit-message: Updated bindings
+          branch: update-bindings
+          delete-branch: true
+          title: Update bindings
+          body: |
+            Bindings should be updated to be consistent with latest changes
 
-    - name: Installing Rust ${{ matrix.rust-channel }} w/ ${{ matrix.rust-target }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust-channel }}
-        target: ${{ matrix.rust-target }}
-        override: true
+  build-demo:
+    needs:
+      - build
+      - cargo-apk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      - name: Setup Android NDK
+        run: sdkmanager --sdk_root=${ANDROID_SDK_ROOT} ndk-bundle
+      - name: Setup Rust
+        uses: hecrj/setup-rust-action@v1
+        with:
+          targets: armv7-linux-androideabi, aarch64-linux-android, i686-linux-android, x86_64-linux-android
+      - name: Setup Cargo apk
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/bin/cargo-apk
+          key: ${{ runner.os }}-cargo-apk
+      - name: Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-demo_apk-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build cache
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-build-demo_apk-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build demo apk
+        uses: actions-rs/cargo@v1
+        with:
+          command: apk
+          args: build --manifest-path oboe-demo/Cargo.toml --release --features compile-oboe
+      - name: Upload demo apk
+        uses: actions/upload-artifact@v2
+        with:
+          name: apk
+          path: target/release/apk/oboe-demo.apk
 
-    - name: Run tests
-      run: |
-        cd oboe-sys && cargo test --features test && cd ..
-        cd oboe && cargo test --features rustdoc --doc && cd ..
-        # cargo test -p oboe
-    - name: Install cargo-apk
-      run:
-        cargo install --path cargo-apk
+  release:
+    if: github.repository == 'katyo/oboe-rs' && startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build
+      - build-demo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download libraries
+        uses: actions/download-artifact@v2
+        with:
+          name: library
+      - name: Download demo
+        uses: actions/download-artifact@v2
+        with:
+          name: apk
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            *.tar.gz
+            *.apk
+          #prerelease: true
+          #draft: true
+          fail_on_unmatched_files: true
 
-    - name: Check compiling on target ${{ matrix.rust-target }}
-      run: |
-        export NDK_HOME="$GITHUB_WORKSPACE/android-ndk-r20"
-        export CC="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
-        export AR="$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-        cargo check -p oboe --target ${{ matrix.rust-target }}
-        # cargo apk build -p oboe-demo --target ${{ matrix.rust-target }} --examples
+  publish:
+    if: github.repository == 'katyo/oboe-rs' && startsWith(github.ref, 'refs/tags/')
+    needs:
+      - release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Publish crates
+        uses: katyo/publish-crates@v1
+        with:
+          registry-token: ${{ secrets.CRATES_TOKEN }}
+          args: --no-verify
+          #dry-run: true
+
+  cargo-ndk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare cache
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/.cargo/bin/cargo-ndk
+          key: ${{ runner.os }}-cargo-ndk
+      - name: Setup cargo ndk
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-ndk
+
+  cargo-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare cache
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/.cargo/bin/cargo-apk
+          key: ${{ runner.os }}-cargo-apk
+      - name: Setup cargo apk
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-apk

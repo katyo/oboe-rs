@@ -10,9 +10,9 @@
  * - __java-interface__ Add interface for some Android platform APIs.
  * - __generate-bindings__ Generate bindings at compile-time. By default the pregenerated bindings will be used.
  * - __compile-library__ Compile _oboe_ C++ library at compile-time using __cmake__. By default the precompiled library will be used.
- * - __static-link__ Use static linking. By default the shared Oboe libarary will be used. _Currently this feature can cause linking errors._
+ * - __shared-link__ Use shared linking. By default the static Oboe libarary will be used.
  *
- * The crate already has pregenerated bindings and precompiled library for the following Android targets:
+ * The crate already has pregenerated bindings and precompiled static libraries for the following Android targets:
  *
  * - __armv7__
  * - __aarch64__
@@ -25,9 +25,9 @@
  *
  * In case of using tools with libclang under the hood like __bindgen__ you must be sure in proper your setup. Otherwise you get an errors related to missing headers or definitions.
  *
- * To build applications you need recent version of __cargo-apk__ from git, which supports latest Android [SDK](https://developer.android.com/studio#command-tools) (28+) and [NDK](https://developer.android.com/ndk) (20+). Don't forget to set ANDROID_HOME and NDK_HOME environment variables with paths to installed SDK and NDK.
+ * To build applications you need recent version of __cargo-apk__, which supports latest Android [SDK](https://developer.android.com/studio#command-tools) (28+) and [NDK](https://developer.android.com/ndk) (20+). Don't forget to set ANDROID_SDK_ROOT environment variable with paths to installed SDK.
  *
- * For building host crates which requires C-compiler you usually should also set __HOST_CC__ environment variable with path to your C-compiler.
+ * For building host crates which requires C-compiler you may also set __HOST_CC__ environment variable with path to your C-compiler.
  *
  * ## Usage example
  *

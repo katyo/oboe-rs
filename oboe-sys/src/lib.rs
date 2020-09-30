@@ -2,7 +2,11 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-#[cfg(all(not(target_os = "android"), not(test), not(feature = "rustdoc")))]
+#[cfg(all(
+    not(target_os = "android"),
+    not(feature = "test"),
+    not(feature = "rustdoc")
+))]
 compile_error!("Currently oboe-sys only supports Android platform");
 
 #[cfg(feature = "generate-bindings")]

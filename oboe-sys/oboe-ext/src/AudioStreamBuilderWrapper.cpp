@@ -17,8 +17,20 @@ namespace oboe {
     delete builder;
   }
 
+  AudioApi AudioStreamBuilder_getAudioApi(const AudioStreamBuilder *builder) {
+    return builder->getAudioApi();
+  }
+
+  void AudioStreamBuilder_setAudioApi(AudioStreamBuilder *builder, AudioApi api) {
+    builder->setAudioApi(api);
+  }
+
   void AudioStreamBuilder_setCallback(AudioStreamBuilder *builder,
                                       AudioStreamCallbackWrapper *callback) {
     builder->setCallback(callback);
+  }
+
+  AudioStreamBase* AudioStreamBuilder_getBase(AudioStreamBuilder *builder) {
+    return static_cast<AudioStreamBase*>(builder);
   }
 }
