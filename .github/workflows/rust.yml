@@ -267,9 +267,8 @@ jobs:
           override: true
       - name: Publish crates
         uses: katyo/publish-crates@v1
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
         with:
+          registry-token: ${{ secrets.CRATES_TOKEN }}
           args: --no-verify
           dry-run: true
 
