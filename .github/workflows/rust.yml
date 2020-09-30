@@ -219,7 +219,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: apk
-          args: build --package oboe-demo --release
+          args: build --manifest-path oboe-demo/Cargo.toml --release --features compile-oboe
       - name: Upload demo apk
         uses: actions/upload-artifact@v2
         with:
