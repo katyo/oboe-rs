@@ -249,8 +249,8 @@ jobs:
           files: |
             *.tar.gz
             *.apk
-          prerelease: true
-          draft: true
+          #prerelease: true
+          #draft: true
           fail_on_unmatched_files: true
 
   publish:
@@ -270,7 +270,7 @@ jobs:
         with:
           registry-token: ${{ secrets.CRATES_TOKEN }}
           args: --no-verify
-          dry-run: true
+          #dry-run: true
 
   cargo-ndk:
     runs-on: ubuntu-latest

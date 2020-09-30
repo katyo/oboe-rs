@@ -1,7 +1,7 @@
 [package]
 name = "oboe-demo"
 description = "Simple sine-wave playing demo"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["K. <kayo@illumium.org>"]
 edition = "2018"
 publish = false
@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies.oboe]
 path = "../oboe"
+version = "0.2.0"
 #features = ["generate-bindings"]
 #features = ["generate-bindings", "compile-library"]
 #features = ["compile-library", "java-interface"]
@@ -45,7 +46,6 @@ build_targets = [ "armv7-linux-androideabi", "aarch64-linux-android", "i686-linu
 #build_targets = ["armv7-linux-androideabi"]
 #build_targets = ["i686-linux-android"]
 #build_targets = ["x86_64-linux-android"]
-#build_targets = [ "armv7-linux-androideabi", "aarch64-linux-android"]
 package_name = "org.illumium.rust-oboe-demo"
 label = "Android oboe demo"
 version_code = 100

@@ -1,6 +1,6 @@
 [package]
 name = "oboe"
-version = "0.1.2"
+version = "0.2.0"
 description = "Safe interface for oboe an android library for low latency audio IO"
 categories = ["api-bindings", "multimedia::audio"]
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
@@ -19,7 +19,7 @@ num-traits = "0.2"
 num-derive = "0.3"
 
 [dependencies.oboe-sys]
-version = "0.1.2"
+version = "0.2.0"
 path = "../oboe-sys"
 
 [dependencies.ndk]
