@@ -1,7 +1,7 @@
 [package]
 name = "oboe-demo"
 description = "Simple sine-wave playing demo"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["K. <kayo@illumium.org>"]
 edition = "2018"
 publish = false
@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies.oboe]
 path = "../oboe"
-version = "0.2.0"
+version = "0.2.1"
 #features = ["generate-bindings"]
 #features = ["generate-bindings", "compile-library"]
 #features = ["compile-library", "java-interface"]

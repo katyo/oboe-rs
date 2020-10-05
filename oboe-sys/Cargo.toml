@@ -1,6 +1,6 @@
 [package]
 name = "oboe-sys"
-version = "0.2.0"
+version = "0.2.1"
 description = "Unsafe bindings for oboe an android library for low latency audio IO"
 categories = ["external-ffi-bindings", "multimedia::audio"]
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
