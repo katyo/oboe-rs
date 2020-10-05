@@ -9,7 +9,7 @@ license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/katyo/oboe-rs"
 edition = "2018"
-include = ["/src/*.rs", "/oboe-ext", "/README.md"]
+include = ["/build.rs", "/src/*.rs", "/oboe-ext", "/README.md"]
 
 [badges]
 maintenance = { status = "experimental" }
