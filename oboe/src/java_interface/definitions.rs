@@ -90,6 +90,7 @@ pub enum AudioDeviceType {
     BuiltinEarpiece = 1,
     BuiltinMic = 15,
     BuiltinSpeaker = 2,
+    BuiltinSpeakerSafe = 24,
     Bus = 21,
     Dock = 13,
     Fm = 14,
