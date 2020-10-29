@@ -106,7 +106,7 @@ pub enum AudioDeviceType {
     UsbAccessory = 12,
     UsbDevice = 11,
     UsbHeadset = 22,
-    UsbHeadphones = 4,
+    WiredHeadphones = 4,
     WiredHeadset = 3,
 }
 
