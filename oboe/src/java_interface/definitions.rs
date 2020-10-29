@@ -81,6 +81,7 @@ pub struct AudioDeviceInfo {
  * The type of audio device
  */
 #[derive(Debug, Clone, Copy, FromPrimitive)]
+#[non_exhaustive]
 #[repr(i32)]
 pub enum AudioDeviceType {
     Unknown = 0,
