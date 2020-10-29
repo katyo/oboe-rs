@@ -79,19 +79,17 @@ pub trait AudioInputCallback {
      *
      * These are things the function should NOT do:
      *
-     * - allocate memory using
+     * - allocate memory
      * - any file operations such as opening, closing, reading or writing
      * - any network operations such as streaming
-     * - use any mutexes or other synchronization primitives
+     * - use any mutexes or other blocking synchronization primitives
      * - sleep
-     * - oboeStream.stop(), pause(), flush() or close()
-     * - oboeStream.read()
-     * - oboeStream.write()
+     * - stop or close stream
+     * - read or write on stream which invoked it
      *
      * The following are OK to call from the data callback:
      *
-     * - oboeStream.get*()
-     * - oboeStream.set_buffer_size_in_frames()
+     * - stream.get_*()
      *
      * If you need to move data, eg. MIDI commands, in or out of the callback function then
      * we recommend the use of non-blocking techniques such as an atomic FIFO.
@@ -168,19 +166,17 @@ pub trait AudioOutputCallback {
      *
      * These are things the function should NOT do:
      *
-     * - allocate memory using
+     * - allocate memory
      * - any file operations such as opening, closing, reading or writing
      * - any network operations such as streaming
-     * - use any mutexes or other synchronization primitives
+     * - use any mutexes or other blocking synchronization primitives
      * - sleep
-     * - oboeStream.stop(), pause(), flush() or close()
-     * - oboeStream.read()
-     * - oboeStream.write()
+     * - stop or close stream
+     * - read or write on stream which invoked it
      *
      * The following are OK to call from the data callback:
      *
-     * - oboeStream.get_*()
-     * - oboeStream.set_buffer_size_in_frames()
+     * - stream.get_*()
      *
      * If you need to move data, eg. MIDI commands, in or out of the callback function then
      * we recommend the use of non-blocking techniques such as an atomic FIFO.
