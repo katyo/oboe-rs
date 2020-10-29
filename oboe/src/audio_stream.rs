@@ -58,34 +58,6 @@ pub trait AudioStream: AudioStreamBase {
     fn start_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status;
 
     /**
-     * Pause the stream. This will block until the stream has been paused, an error occurs
-     * or `timeoutNanoseconds` has been reached.
-     */
-    fn pause(&mut self) -> Status {
-        self.pause_with_timeout(DEFAULT_TIMEOUT_NANOS)
-    }
-
-    /**
-     * Pause the stream. This will block until the stream has been paused, an error occurs
-     * or `timeoutNanoseconds` has been reached.
-     */
-    fn pause_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status;
-
-    /**
-     * Flush the stream. This will block until the stream has been flushed, an error occurs
-     * or `timeoutNanoseconds` has been reached.
-     */
-    fn flush(&mut self) -> Status {
-        self.flush_with_timeout(DEFAULT_TIMEOUT_NANOS)
-    }
-
-    /**
-     * Flush the stream. This will block until the stream has been flushed, an error occurs
-     * or `timeoutNanoseconds` has been reached.
-     */
-    fn flush_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status;
-
-    /**
      * Stop the stream. This will block until the stream has been stopped, an error occurs
      * or `timeoutNanoseconds` has been reached.
      */
@@ -104,18 +76,6 @@ pub trait AudioStream: AudioStreamBase {
      * `start(0)`.
      */
     fn request_start(&mut self) -> Status;
-
-    /**
-     * Pause the stream asynchronously. Returns immediately (does not block). Equivalent to calling
-     * `pause(0)`.
-     */
-    fn request_pause(&mut self) -> Status;
-
-    /**
-     * Flush the stream asynchronously. Returns immediately (does not block). Equivalent to calling
-     * `flush(0)`.
-     */
-    fn request_flush(&mut self) -> Status;
 
     /**
      * Stop the stream asynchronously. Returns immediately (does not block). Equivalent to calling
@@ -322,6 +282,46 @@ pub trait AudioOutputStream: AudioStream {
      * This monotonic counter will never get reset.
      */
     fn get_frames_written(&mut self) -> i64;
+
+    /**
+     * Pause the stream. This will block until the stream has been paused, an error occurs
+     * or `timeoutNanoseconds` has been reached.
+     */
+    fn pause(&mut self) -> Status {
+        self.pause_with_timeout(DEFAULT_TIMEOUT_NANOS)
+    }
+
+    /**
+     * Pause the stream. This will block until the stream has been paused, an error occurs
+     * or `timeoutNanoseconds` has been reached.
+     */
+    fn pause_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status;
+
+    /**
+     * Flush the stream. This will block until the stream has been flushed, an error occurs
+     * or `timeoutNanoseconds` has been reached.
+     */
+    fn flush(&mut self) -> Status {
+        self.flush_with_timeout(DEFAULT_TIMEOUT_NANOS)
+    }
+
+    /**
+     * Flush the stream. This will block until the stream has been flushed, an error occurs
+     * or `timeoutNanoseconds` has been reached.
+     */
+    fn flush_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status;
+
+    /**
+     * Pause the stream asynchronously. Returns immediately (does not block). Equivalent to calling
+     * `pause(0)`.
+     */
+    fn request_pause(&mut self) -> Status;
+
+    /**
+     * Flush the stream asynchronously. Returns immediately (does not block). Equivalent to calling
+     * `flush(0)`.
+     */
+    fn request_flush(&mut self) -> Status;
 }
 
 /**
@@ -365,24 +365,6 @@ impl<T: RawAudioStream + RawAudioStreamBase> AudioStream for T {
         })
     }
 
-    fn pause_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
-        wrap_status(unsafe {
-            ffi::oboe_AudioStream_pause(
-                self._raw_stream_mut() as *mut _ as *mut c_void,
-                timeout_nanoseconds,
-            )
-        })
-    }
-
-    fn flush_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
-        wrap_status(unsafe {
-            ffi::oboe_AudioStream_flush(
-                self._raw_stream_mut() as *mut _ as *mut c_void,
-                timeout_nanoseconds,
-            )
-        })
-    }
-
     fn stop_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
         wrap_status(unsafe {
             ffi::oboe_AudioStream_stop(
@@ -394,14 +376,6 @@ impl<T: RawAudioStream + RawAudioStreamBase> AudioStream for T {
 
     fn request_start(&mut self) -> Status {
         wrap_status(unsafe { ffi::oboe_AudioStream_requestStart(self._raw_stream_mut()) })
-    }
-
-    fn request_pause(&mut self) -> Status {
-        wrap_status(unsafe { ffi::oboe_AudioStream_requestPause(self._raw_stream_mut()) })
-    }
-
-    fn request_flush(&mut self) -> Status {
-        wrap_status(unsafe { ffi::oboe_AudioStream_requestFlush(self._raw_stream_mut()) })
     }
 
     fn request_stop(&mut self) -> Status {
@@ -502,6 +476,32 @@ impl<T: RawAudioOutputStream + RawAudioStream + RawAudioStreamBase> AudioOutputS
         unsafe {
             ffi::oboe_AudioStream_getFramesWritten(self._raw_stream_mut() as *mut _ as *mut c_void)
         }
+    }
+
+    fn pause_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
+        wrap_status(unsafe {
+            ffi::oboe_AudioStream_pause(
+                self._raw_stream_mut() as *mut _ as *mut c_void,
+                timeout_nanoseconds,
+            )
+        })
+    }
+
+    fn flush_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
+        wrap_status(unsafe {
+            ffi::oboe_AudioStream_flush(
+                self._raw_stream_mut() as *mut _ as *mut c_void,
+                timeout_nanoseconds,
+            )
+        })
+    }
+
+    fn request_pause(&mut self) -> Status {
+        wrap_status(unsafe { ffi::oboe_AudioStream_requestPause(self._raw_stream_mut()) })
+    }
+
+    fn request_flush(&mut self) -> Status {
+        wrap_status(unsafe { ffi::oboe_AudioStream_requestFlush(self._raw_stream_mut()) })
     }
 }
 
