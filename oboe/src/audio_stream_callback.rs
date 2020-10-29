@@ -10,7 +10,7 @@ use oboe_sys as ffi;
 use num_traits::FromPrimitive;
 
 use super::{
-    AudioInputStream, AudioOutputStream, AudioStreamRef, DataCallbackResult, Error, Input,
+    AudioInputStreamSafe, AudioOutputStreamSafe, AudioStreamRef, DataCallbackResult, Error, Input,
     IsFrameType, Output,
 };
 
@@ -45,7 +45,12 @@ pub trait AudioInputCallback {
      * Do not close or delete the stream in this method because it will be
      * closed after this method returns.
      */
-    fn on_error_before_close(&mut self, _audio_stream: &mut dyn AudioInputStream, _error: Error) {}
+    fn on_error_before_close(
+        &mut self,
+        _audio_stream: &mut dyn AudioInputStreamSafe,
+        _error: Error,
+    ) {
+    }
 
     /**
      * This will be called when an error occurs on a stream or when the stream is disconnected.
@@ -56,7 +61,12 @@ pub trait AudioInputCallback {
      * This callback could be used to reopen a new stream on another device.
      * You can safely delete the old AudioStream in this method.
      */
-    fn on_error_after_close(&mut self, _audio_stream: &mut dyn AudioInputStream, _error: Error) {}
+    fn on_error_after_close(
+        &mut self,
+        _audio_stream: &mut dyn AudioInputStreamSafe,
+        _error: Error,
+    ) {
+    }
 
     /**
      * A buffer is ready for processing.
@@ -96,7 +106,7 @@ pub trait AudioInputCallback {
      */
     fn on_audio_ready(
         &mut self,
-        audio_stream: &mut dyn AudioInputStream,
+        audio_stream: &mut dyn AudioInputStreamSafe,
         audio_data: &[<Self::FrameType as IsFrameType>::Type],
     ) -> DataCallbackResult;
 }
@@ -132,7 +142,12 @@ pub trait AudioOutputCallback {
      * Do not close or delete the stream in this method because it will be
      * closed after this method returns.
      */
-    fn on_error_before_close(&mut self, _audio_stream: &mut dyn AudioOutputStream, _error: Error) {}
+    fn on_error_before_close(
+        &mut self,
+        _audio_stream: &mut dyn AudioOutputStreamSafe,
+        _error: Error,
+    ) {
+    }
 
     /**
      * This will be called when an error occurs on a stream or when the stream is disconnected.
@@ -143,7 +158,12 @@ pub trait AudioOutputCallback {
      * This callback could be used to reopen a new stream on another device.
      * You can safely delete the old AudioStream in this method.
      */
-    fn on_error_after_close(&mut self, _audio_stream: &mut dyn AudioOutputStream, _error: Error) {}
+    fn on_error_after_close(
+        &mut self,
+        _audio_stream: &mut dyn AudioOutputStreamSafe,
+        _error: Error,
+    ) {
+    }
 
     /**
      * A buffer is ready for processing.
@@ -183,7 +203,7 @@ pub trait AudioOutputCallback {
      */
     fn on_audio_ready(
         &mut self,
-        audio_stream: &mut dyn AudioOutputStream,
+        audio_stream: &mut dyn AudioOutputStreamSafe,
         audio_data: &mut [<Self::FrameType as IsFrameType>::Type],
     ) -> DataCallbackResult;
 }

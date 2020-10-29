@@ -1,8 +1,8 @@
 use std::f32::consts::PI;
 
 use oboe::{
-    AudioDeviceDirection, AudioDeviceInfo, AudioFeature, AudioOutputCallback, AudioOutputStream,
-    AudioStream, AudioStreamAsync, AudioStreamBuilder, DataCallbackResult, DefaultStreamValues,
+    AudioDeviceDirection, AudioDeviceInfo, AudioFeature, AudioOutputCallback, AudioOutputStreamSafe,
+    AudioOutputStream, AudioStream, AudioStreamAsync, AudioStreamBuilder, DataCallbackResult, DefaultStreamValues,
     Mono, Output, PerformanceMode, SharingMode,
 };
 
@@ -30,6 +30,14 @@ impl SineGen {
             stream.start().unwrap();
 
             self.stream = Some(stream);
+        }
+    }
+
+    /// Pause audio stream
+    pub fn try_pause(&mut self) {
+        if let Some(stream) = &mut self.stream {
+            log::debug!("pause stream: {:?}", stream);
+            stream.pause().unwrap();
         }
     }
 
@@ -73,7 +81,7 @@ impl AudioOutputCallback for SineWave {
 
     fn on_audio_ready(
         &mut self,
-        stream: &mut dyn AudioOutputStream,
+        stream: &mut dyn AudioOutputStreamSafe,
         frames: &mut [f32],
     ) -> DataCallbackResult {
         if self.delta.is_none() {

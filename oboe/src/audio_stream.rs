@@ -241,9 +241,55 @@ pub trait AudioStream: AudioStreamSafe {
 }
 
 /**
+ * The stream which is used for async audio input
+ */
+pub trait AudioInputStreamSafe: AudioStreamSafe {
+    /**
+     * The number of audio frames read from the stream.
+     * This monotonic counter will never get reset.
+     */
+    fn get_frames_read(&mut self) -> i64;
+}
+
+/**
+ * The stream which is used for audio input
+ */
+pub trait AudioInputStream: AudioStream + AudioInputStreamSafe {}
+
+/**
+ * The stream which can be used for audio input in synchronous mode
+ */
+pub trait AudioInputStreamSync: AudioInputStream {
+    type FrameType: IsFrameType;
+
+    /**
+     * Read data into the supplied buffer from the stream. This method will block until the read
+     * is complete or it runs out of time.
+     *
+     * If `timeout_nanoseconds` is zero then this call will not wait.
+     */
+    fn read(
+        &mut self,
+        _buffer: &mut [<Self::FrameType as IsFrameType>::Type],
+        _timeout_nanoseconds: i64,
+    ) -> Result<i32>;
+}
+
+/**
+ * The stream which is used for async audio output
+ */
+pub trait AudioOutputStreamSafe: AudioStreamSafe {
+    /**
+     * The number of audio frames written into the stream.
+     * This monotonic counter will never get reset.
+     */
+    fn get_frames_written(&mut self) -> i64;
+}
+
+/**
  * The stream which has pause/flush capabilities
  */
-pub trait AudioStreamSink: AudioStream {
+pub trait AudioOutputStream: AudioStream + AudioOutputStreamSafe {
     /**
      * Pause the stream. This will block until the stream has been paused, an error occurs
      * or `timeoutNanoseconds` has been reached.
@@ -286,50 +332,9 @@ pub trait AudioStreamSink: AudioStream {
 }
 
 /**
- * The stream which is used for async audio input
- */
-pub trait AudioInputStream: AudioStreamSafe {
-    /**
-     * The number of audio frames read from the stream.
-     * This monotonic counter will never get reset.
-     */
-    fn get_frames_read(&mut self) -> i64;
-}
-
-/**
- * The stream which can be used for audio input in synchronous mode
- */
-pub trait AudioInputStreamSync: AudioStream + AudioInputStream {
-    type FrameType: IsFrameType;
-
-    /**
-     * Read data into the supplied buffer from the stream. This method will block until the read
-     * is complete or it runs out of time.
-     *
-     * If `timeout_nanoseconds` is zero then this call will not wait.
-     */
-    fn read(
-        &mut self,
-        _buffer: &mut [<Self::FrameType as IsFrameType>::Type],
-        _timeout_nanoseconds: i64,
-    ) -> Result<i32>;
-}
-
-/**
- * The stream which is used for async audio output
- */
-pub trait AudioOutputStream: AudioStreamSafe {
-    /**
-     * The number of audio frames written into the stream.
-     * This monotonic counter will never get reset.
-     */
-    fn get_frames_written(&mut self) -> i64;
-}
-
-/**
  * The stream which can be used for audio output in synchronous mode
  */
-pub trait AudioOutputStreamSync: AudioStreamSink + AudioOutputStream {
+pub trait AudioOutputStreamSync: AudioOutputStream {
     type FrameType: IsFrameType;
 
     /**
@@ -465,7 +470,25 @@ impl<T: RawAudioStream + RawAudioStreamBase> AudioStream for T {
     }
 }
 
-impl<T: RawAudioStream + RawAudioStreamBase> AudioStreamSink for T {
+impl<T: RawAudioInputStream + RawAudioStream + RawAudioStreamBase> AudioInputStreamSafe for T {
+    fn get_frames_read(&mut self) -> i64 {
+        unsafe {
+            ffi::oboe_AudioStream_getFramesRead(self._raw_stream_mut() as *mut _ as *mut c_void)
+        }
+    }
+}
+
+impl<T: RawAudioInputStream + RawAudioStream + RawAudioStreamBase> AudioInputStream for T {}
+
+impl<T: RawAudioOutputStream + RawAudioStream + RawAudioStreamBase> AudioOutputStreamSafe for T {
+    fn get_frames_written(&mut self) -> i64 {
+        unsafe {
+            ffi::oboe_AudioStream_getFramesWritten(self._raw_stream_mut() as *mut _ as *mut c_void)
+        }
+    }
+}
+
+impl<T: RawAudioOutputStream + RawAudioStream + RawAudioStreamBase> AudioOutputStream for T {
     fn pause_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
         wrap_status(unsafe {
             ffi::oboe_AudioStream_pause(
@@ -490,22 +513,6 @@ impl<T: RawAudioStream + RawAudioStreamBase> AudioStreamSink for T {
 
     fn request_flush(&mut self) -> Status {
         wrap_status(unsafe { ffi::oboe_AudioStream_requestFlush(self._raw_stream_mut()) })
-    }
-}
-
-impl<T: RawAudioInputStream + RawAudioStream + RawAudioStreamBase> AudioInputStream for T {
-    fn get_frames_read(&mut self) -> i64 {
-        unsafe {
-            ffi::oboe_AudioStream_getFramesRead(self._raw_stream_mut() as *mut _ as *mut c_void)
-        }
-    }
-}
-
-impl<T: RawAudioOutputStream + RawAudioStream + RawAudioStreamBase> AudioOutputStream for T {
-    fn get_frames_written(&mut self) -> i64 {
-        unsafe {
-            ffi::oboe_AudioStream_getFramesWritten(self._raw_stream_mut() as *mut _ as *mut c_void)
-        }
     }
 }
 
