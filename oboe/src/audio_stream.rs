@@ -11,7 +11,7 @@ use std::{
 
 use super::{
     audio_stream_base_fmt, wrap_result, wrap_status, AudioApi, AudioCallbackWrapper,
-    AudioStreamBase, Error, FrameTimestamp, Input, IsFrameType, Output, RawAudioInputStream,
+    AudioStreamBase, FrameTimestamp, Input, IsFrameType, Output, RawAudioInputStream,
     RawAudioOutputStream, RawAudioStream, RawAudioStreamBase, Result, Status, StreamState,
     NANOS_PER_MILLISECOND,
 };
@@ -25,9 +25,123 @@ use super::{
 pub const DEFAULT_TIMEOUT_NANOS: i64 = 2000 * NANOS_PER_MILLISECOND;
 
 /**
+ * Safe base trait for Oboe audio stream.
+ */
+pub trait AudioStreamSafe: AudioStreamBase {
+    /**
+     * Query the current state, eg. `StreamState::Pausing`
+     */
+    fn get_state(&self) -> StreamState;
+
+    /**
+     * This can be used to adjust the latency of the buffer by changing
+     * the threshold where blocking will occur.
+     * By combining this with [AudioStream::get_xrun_count()], the latency can be tuned
+     * at run-time for each device.
+     *
+     * This cannot be set higher than [AudioStream::get_buffer_capacity()].
+     */
+    fn set_buffer_size_in_frames(&mut self, _requested_frames: i32) -> Result<i32>;
+
+    /**
+     * An XRun is an Underrun or an Overrun.
+     * During playing, an underrun will occur if the stream is not written in time
+     * and the system runs out of valid data.
+     * During recording, an overrun will occur if the stream is not read in time
+     * and there is no place to put the incoming data so it is discarded.
+     *
+     * An underrun or overrun can cause an audible "pop" or "glitch".
+     */
+    fn get_xrun_count(&self) -> Result<i32>;
+
+    /**
+     * Returns true if XRun counts are supported on the stream
+     */
+    fn is_xrun_count_supported(&self) -> bool;
+
+    /**
+     * Query the number of frames that are read or written by the endpoint at one time.
+     */
+    fn get_frames_per_burst(&mut self) -> i32;
+
+    /**
+     * Get the number of bytes in each audio frame. This is calculated using the channel count
+     * and the sample format. For example, a 2 channel floating point stream will have
+     * 2 * 4 = 8 bytes per frame.
+     */
+    fn get_bytes_per_frame(&mut self) -> i32 {
+        self.get_channel_count() as i32 * self.get_bytes_per_sample()
+    }
+
+    /**
+     * Get the number of bytes per sample. This is calculated using the sample format. For example,
+     * a stream using 16-bit integer samples will have 2 bytes per sample.
+     *
+     * @return the number of bytes per sample.
+     */
+    fn get_bytes_per_sample(&mut self) -> i32;
+
+    /**
+     * Calculate the latency of a stream based on getTimestamp().
+     *
+     * Output latency is the time it takes for a given frame to travel from the
+     * app to some type of digital-to-analog converter. If the DAC is external, for example
+     * in a USB interface or a TV connected by HDMI, then there may be additional latency
+     * that the Android device is unaware of.
+     *
+     * Input latency is the time it takes to a given frame to travel from an analog-to-digital
+     * converter (ADC) to the app.
+     *
+     * Note that the latency of an OUTPUT stream will increase abruptly when you write data to it
+     * and then decrease slowly over time as the data is consumed.
+     *
+     * The latency of an INPUT stream will decrease abruptly when you read data from it
+     * and then increase slowly over time as more data arrives.
+     *
+     * The latency of an OUTPUT stream is generally higher than the INPUT latency
+     * because an app generally tries to keep the OUTPUT buffer full and the INPUT buffer empty.
+     */
+    fn calculate_latency_millis(&mut self) -> Result<f64>;
+
+    /**
+     * Get the estimated time that the frame at `frame_position` entered or left the audio processing
+     * pipeline.
+     *
+     * This can be used to coordinate events and interactions with the external environment, and to
+     * estimate the latency of an audio stream. An example of usage can be found in the hello-oboe
+     * sample (search for "calculate_current_output_latency_millis").
+     *
+     * The time is based on the implementation's best effort, using whatever knowledge is available
+     * to the system, but cannot account for any delay unknown to the implementation.
+     *
+     * @param clockId the type of clock to use e.g. CLOCK_MONOTONIC
+     * @return a FrameTimestamp containing the position and time at which a particular audio frame
+     * entered or left the audio processing pipeline, or an error if the operation failed.
+     */
+    fn get_timestamp(&mut self, clock_id: i32) -> Result<FrameTimestamp>;
+
+    /**
+     * Get the underlying audio API which the stream uses.
+     */
+    fn get_audio_api(&self) -> AudioApi;
+
+    /**
+     * Returns true if the underlying audio API is AAudio.
+     */
+    fn uses_aaudio(&self) -> bool {
+        self.get_audio_api() == AudioApi::AAudio
+    }
+
+    /**
+     * Returns the number of frames of data currently in the buffer
+     */
+    fn get_available_frames(&mut self) -> Result<i32>;
+}
+
+/**
  * Base trait for Oboe audio stream.
  */
-pub trait AudioStream: AudioStreamBase {
+pub trait AudioStream: AudioStreamSafe {
     /**
      * Open a stream based on the current settings.
      *
@@ -84,11 +198,6 @@ pub trait AudioStream: AudioStreamBase {
     fn request_stop(&mut self) -> Status;
 
     /**
-     * Query the current state, eg. `StreamState::Pausing`
-     */
-    fn get_state(&self) -> StreamState;
-
-    /**
      * Wait until the stream's current state no longer matches the input state.
      * The input state is passed to avoid race conditions caused by the state
      * changing between calls.
@@ -120,116 +229,6 @@ pub trait AudioStream: AudioStreamBase {
     ) -> Result<StreamState>;
 
     /**
-     * This can be used to adjust the latency of the buffer by changing
-     * the threshold where blocking will occur.
-     * By combining this with [AudioStream::get_xrun_count()], the latency can be tuned
-     * at run-time for each device.
-     *
-     * This cannot be set higher than [AudioStream::get_buffer_capacity()].
-     */
-    fn set_buffer_size_in_frames(&mut self, _requested_frames: i32) -> Result<i32> {
-        Err(Error::Unimplemented)
-    }
-
-    /**
-     * An XRun is an Underrun or an Overrun.
-     * During playing, an underrun will occur if the stream is not written in time
-     * and the system runs out of valid data.
-     * During recording, an overrun will occur if the stream is not read in time
-     * and there is no place to put the incoming data so it is discarded.
-     *
-     * An underrun or overrun can cause an audible "pop" or "glitch".
-     */
-    fn get_xrun_count(&self) -> Result<i32> {
-        Err(Error::Unimplemented)
-    }
-
-    /**
-     * Returns true if XRun counts are supported on the stream
-     */
-    fn is_xrun_count_supported(&self) -> bool;
-
-    /**
-     * Query the number of frames that are read or written by the endpoint at one time.
-     */
-    fn get_frames_per_burst(&mut self) -> i32;
-
-    /**
-     * Get the number of bytes in each audio frame. This is calculated using the channel count
-     * and the sample format. For example, a 2 channel floating point stream will have
-     * 2 * 4 = 8 bytes per frame.
-     */
-    fn get_bytes_per_frame(&mut self) -> i32 {
-        self.get_channel_count() as i32 * self.get_bytes_per_sample()
-    }
-
-    /**
-     * Get the number of bytes per sample. This is calculated using the sample format. For example,
-     * a stream using 16-bit integer samples will have 2 bytes per sample.
-     *
-     * @return the number of bytes per sample.
-     */
-    fn get_bytes_per_sample(&mut self) -> i32;
-
-    /**
-     * Calculate the latency of a stream based on getTimestamp().
-     *
-     * Output latency is the time it takes for a given frame to travel from the
-     * app to some type of digital-to-analog converter. If the DAC is external, for example
-     * in a USB interface or a TV connected by HDMI, then there may be additional latency
-     * that the Android device is unaware of.
-     *
-     * Input latency is the time it takes to a given frame to travel from an analog-to-digital
-     * converter (ADC) to the app.
-     *
-     * Note that the latency of an OUTPUT stream will increase abruptly when you write data to it
-     * and then decrease slowly over time as the data is consumed.
-     *
-     * The latency of an INPUT stream will decrease abruptly when you read data from it
-     * and then increase slowly over time as more data arrives.
-     *
-     * The latency of an OUTPUT stream is generally higher than the INPUT latency
-     * because an app generally tries to keep the OUTPUT buffer full and the INPUT buffer empty.
-     */
-    fn calculate_latency_millis(&mut self) -> Result<f64> {
-        Err(Error::Unimplemented)
-    }
-
-    /**
-     * Get the estimated time that the frame at `frame_position` entered or left the audio processing
-     * pipeline.
-     *
-     * This can be used to coordinate events and interactions with the external environment, and to
-     * estimate the latency of an audio stream. An example of usage can be found in the hello-oboe
-     * sample (search for "calculate_current_output_latency_millis").
-     *
-     * The time is based on the implementation's best effort, using whatever knowledge is available
-     * to the system, but cannot account for any delay unknown to the implementation.
-     *
-     * @param clockId the type of clock to use e.g. CLOCK_MONOTONIC
-     * @return a FrameTimestamp containing the position and time at which a particular audio frame
-     * entered or left the audio processing pipeline, or an error if the operation failed.
-     */
-    fn get_timestamp(&mut self, clock_id: i32) -> Result<FrameTimestamp>;
-
-    /**
-     * Get the underlying audio API which the stream uses.
-     */
-    fn get_audio_api(&self) -> AudioApi;
-
-    /**
-     * Returns true if the underlying audio API is AAudio.
-     */
-    fn uses_aaudio(&self) -> bool {
-        self.get_audio_api() == AudioApi::AAudio
-    }
-
-    /**
-     * Returns the number of frames of data currently in the buffer
-     */
-    fn get_available_frames(&mut self) -> Result<i32>;
-
-    /**
      * Wait until the stream has a minimum amount of data available in its buffer.
      * This can be used with an EXCLUSIVE MMAP input stream to avoid reading data too close to
      * the DSP write position, which may cause glitches.
@@ -242,9 +241,9 @@ pub trait AudioStream: AudioStreamBase {
 }
 
 /**
- * The stream which can be used for audio input
+ * The stream which is used for async audio input
  */
-pub trait AudioInputStream: AudioStream {
+pub trait AudioInputStream: AudioStreamSafe {
     /**
      * The number of audio frames read from the stream.
      * This monotonic counter will never get reset.
@@ -255,7 +254,7 @@ pub trait AudioInputStream: AudioStream {
 /**
  * The stream which can be used for audio input in synchronous mode
  */
-pub trait AudioInputStreamSync: AudioInputStream {
+pub trait AudioInputStreamSync: AudioStream + AudioInputStream {
     type FrameType: IsFrameType;
 
     /**
@@ -268,20 +267,25 @@ pub trait AudioInputStreamSync: AudioInputStream {
         &mut self,
         _buffer: &mut [<Self::FrameType as IsFrameType>::Type],
         _timeout_nanoseconds: i64,
-    ) -> Result<i32> {
-        Err(Error::Unimplemented)
-    }
+    ) -> Result<i32>;
 }
 
 /**
- * The stream which can be used for audio output
+ * The stream which is used for async audio output
  */
-pub trait AudioOutputStream: AudioStream {
+pub trait AudioOutputStream: AudioStreamSafe {
     /**
      * The number of audio frames written into the stream.
      * This monotonic counter will never get reset.
      */
     fn get_frames_written(&mut self) -> i64;
+}
+
+/**
+ * The stream which can be used for audio output in synchronous mode
+ */
+pub trait AudioOutputStreamSync: AudioStream + AudioOutputStream {
+    type FrameType: IsFrameType;
 
     /**
      * Pause the stream. This will block until the stream has been paused, an error occurs
@@ -322,13 +326,6 @@ pub trait AudioOutputStream: AudioStream {
      * `flush(0)`.
      */
     fn request_flush(&mut self) -> Status;
-}
-
-/**
- * The stream which can be used for audio output in synchronous mode
- */
-pub trait AudioOutputStreamSync: AudioOutputStream {
-    type FrameType: IsFrameType;
 
     /**
      * Write data from the supplied buffer into the stream. This method will block until the write
@@ -340,8 +337,57 @@ pub trait AudioOutputStreamSync: AudioOutputStream {
         &mut self,
         _buffer: &[<Self::FrameType as IsFrameType>::Type],
         _timeout_nanoseconds: i64,
-    ) -> Result<i32> {
-        Err(Error::Unimplemented)
+    ) -> Result<i32>;
+}
+
+impl<T: RawAudioStream + RawAudioStreamBase> AudioStreamSafe for T {
+    fn set_buffer_size_in_frames(&mut self, requested_frames: i32) -> Result<i32> {
+        wrap_result(unsafe {
+            ffi::oboe_AudioStream_setBufferSizeInFrames(self._raw_stream_mut(), requested_frames)
+        })
+    }
+
+    fn get_state(&self) -> StreamState {
+        FromPrimitive::from_i32(unsafe { ffi::oboe_AudioStream_getState(self._raw_stream()) })
+            .unwrap()
+    }
+
+    fn get_xrun_count(&self) -> Result<i32> {
+        wrap_result(unsafe { ffi::oboe_AudioStream_getXRunCount(self._raw_stream()) })
+    }
+
+    fn is_xrun_count_supported(&self) -> bool {
+        unsafe { ffi::oboe_AudioStream_isXRunCountSupported(self._raw_stream()) }
+    }
+
+    fn get_frames_per_burst(&mut self) -> i32 {
+        unsafe { ffi::oboe_AudioStream_getFramesPerBurst(self._raw_stream_mut()) }
+    }
+
+    fn get_bytes_per_sample(&mut self) -> i32 {
+        unsafe { ffi::oboe_AudioStream_getBytesPerSample(self._raw_stream_mut()) }
+    }
+
+    fn calculate_latency_millis(&mut self) -> Result<f64> {
+        wrap_result(unsafe { ffi::oboe_AudioStream_calculateLatencyMillis(self._raw_stream_mut()) })
+    }
+
+    fn get_timestamp(&mut self, clock_id: i32 /* clockid_t */) -> Result<FrameTimestamp> {
+        wrap_result(unsafe {
+            transmute(ffi::oboe_AudioStream_getTimestamp(
+                self._raw_stream_mut() as *mut _ as *mut c_void,
+                clock_id,
+            ))
+        })
+    }
+
+    fn get_audio_api(&self) -> AudioApi {
+        FromPrimitive::from_i32(unsafe { ffi::oboe_AudioStream_getAudioApi(self._raw_stream()) })
+            .unwrap()
+    }
+
+    fn get_available_frames(&mut self) -> Result<i32> {
+        wrap_result(unsafe { ffi::oboe_AudioStream_getAvailableFrames(self._raw_stream_mut()) })
     }
 }
 
@@ -382,11 +428,6 @@ impl<T: RawAudioStream + RawAudioStreamBase> AudioStream for T {
         wrap_status(unsafe { ffi::oboe_AudioStream_requestStop(self._raw_stream_mut()) })
     }
 
-    fn get_state(&self) -> StreamState {
-        FromPrimitive::from_i32(unsafe { ffi::oboe_AudioStream_getState(self._raw_stream()) })
-            .unwrap()
-    }
-
     fn wait_for_state_change(
         &mut self,
         input_state: StreamState,
@@ -402,50 +443,6 @@ impl<T: RawAudioStream + RawAudioStreamBase> AudioStream for T {
             )
         })
         .map(|_| unsafe { next_state.assume_init() })
-    }
-
-    fn set_buffer_size_in_frames(&mut self, requested_frames: i32) -> Result<i32> {
-        wrap_result(unsafe {
-            ffi::oboe_AudioStream_setBufferSizeInFrames(self._raw_stream_mut(), requested_frames)
-        })
-    }
-
-    fn get_xrun_count(&self) -> Result<i32> {
-        wrap_result(unsafe { ffi::oboe_AudioStream_getXRunCount(self._raw_stream()) })
-    }
-
-    fn is_xrun_count_supported(&self) -> bool {
-        unsafe { ffi::oboe_AudioStream_isXRunCountSupported(self._raw_stream()) }
-    }
-
-    fn get_frames_per_burst(&mut self) -> i32 {
-        unsafe { ffi::oboe_AudioStream_getFramesPerBurst(self._raw_stream_mut()) }
-    }
-
-    fn get_bytes_per_sample(&mut self) -> i32 {
-        unsafe { ffi::oboe_AudioStream_getBytesPerSample(self._raw_stream_mut()) }
-    }
-
-    fn calculate_latency_millis(&mut self) -> Result<f64> {
-        wrap_result(unsafe { ffi::oboe_AudioStream_calculateLatencyMillis(self._raw_stream_mut()) })
-    }
-
-    fn get_timestamp(&mut self, clock_id: i32 /* clockid_t */) -> Result<FrameTimestamp> {
-        wrap_result(unsafe {
-            transmute(ffi::oboe_AudioStream_getTimestamp(
-                self._raw_stream_mut() as *mut _ as *mut c_void,
-                clock_id,
-            ))
-        })
-    }
-
-    fn get_audio_api(&self) -> AudioApi {
-        FromPrimitive::from_i32(unsafe { ffi::oboe_AudioStream_getAudioApi(self._raw_stream()) })
-            .unwrap()
-    }
-
-    fn get_available_frames(&mut self) -> Result<i32> {
-        wrap_result(unsafe { ffi::oboe_AudioStream_getAvailableFrames(self._raw_stream_mut()) })
     }
 
     fn wait_for_available_frames(
@@ -477,35 +474,9 @@ impl<T: RawAudioOutputStream + RawAudioStream + RawAudioStreamBase> AudioOutputS
             ffi::oboe_AudioStream_getFramesWritten(self._raw_stream_mut() as *mut _ as *mut c_void)
         }
     }
-
-    fn pause_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
-        wrap_status(unsafe {
-            ffi::oboe_AudioStream_pause(
-                self._raw_stream_mut() as *mut _ as *mut c_void,
-                timeout_nanoseconds,
-            )
-        })
-    }
-
-    fn flush_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
-        wrap_status(unsafe {
-            ffi::oboe_AudioStream_flush(
-                self._raw_stream_mut() as *mut _ as *mut c_void,
-                timeout_nanoseconds,
-            )
-        })
-    }
-
-    fn request_pause(&mut self) -> Status {
-        wrap_status(unsafe { ffi::oboe_AudioStream_requestPause(self._raw_stream_mut()) })
-    }
-
-    fn request_flush(&mut self) -> Status {
-        wrap_status(unsafe { ffi::oboe_AudioStream_requestFlush(self._raw_stream_mut()) })
-    }
 }
 
-pub(crate) fn audio_stream_fmt<T: AudioStreamBase + AudioStream>(
+pub(crate) fn audio_stream_fmt<T: AudioStreamSafe>(
     stream: &T,
     f: &mut fmt::Formatter<'_>,
 ) -> fmt::Result {
@@ -725,6 +696,32 @@ impl<F: IsFrameType> AudioInputStreamSync for AudioStreamSync<Input, F> {
 
 impl<F: IsFrameType> AudioOutputStreamSync for AudioStreamSync<Output, F> {
     type FrameType = F;
+
+    fn pause_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
+        wrap_status(unsafe {
+            ffi::oboe_AudioStream_pause(
+                self._raw_stream_mut() as *mut _ as *mut c_void,
+                timeout_nanoseconds,
+            )
+        })
+    }
+
+    fn flush_with_timeout(&mut self, timeout_nanoseconds: i64) -> Status {
+        wrap_status(unsafe {
+            ffi::oboe_AudioStream_flush(
+                self._raw_stream_mut() as *mut _ as *mut c_void,
+                timeout_nanoseconds,
+            )
+        })
+    }
+
+    fn request_pause(&mut self) -> Status {
+        wrap_status(unsafe { ffi::oboe_AudioStream_requestPause(self._raw_stream_mut()) })
+    }
+
+    fn request_flush(&mut self) -> Status {
+        wrap_status(unsafe { ffi::oboe_AudioStream_requestFlush(self._raw_stream_mut()) })
+    }
 
     fn write(
         &mut self,
