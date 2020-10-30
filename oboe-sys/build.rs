@@ -7,8 +7,10 @@ use std::{
 };
 
 fn main() {
-    #[cfg(not(feature = "rustdoc"))]
-    {
+    if !match env::var("DOCS_RS") {
+        Ok(s) if s == "1" => true,
+        _ => false,
+    } {
         let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR is set by cargo."));
         let ext_dir = Path::new("oboe-ext");
 
@@ -204,10 +206,10 @@ impl Builder {
             .expect("Couldn't write bindings!");
     }
 
-    #[cfg(any(feature = "rustdoc", feature = "test"))]
+    #[cfg(any(feature = "test"))]
     pub fn library(&self) {}
 
-    #[cfg(not(any(feature = "compile-library", feature = "rustdoc", feature = "test")))]
+    #[cfg(not(any(feature = "compile-library", feature = "test")))]
     pub fn library(&self) {
         if self.lib_dir.is_dir() {
             eprintln!(

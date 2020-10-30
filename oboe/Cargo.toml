@@ -39,7 +39,12 @@ shared-link = ["oboe-sys/shared-link"]
 generate-bindings = ["oboe-sys/generate-bindings"]
 compile-library = ["oboe-sys/compile-library"]
 java-interface = ["ndk", "ndk-glue", "jni"]
-rustdoc = ["oboe-sys/rustdoc", "ndk/rustdoc", "java-interface"]
 
 [package.metadata.docs.rs]
-features = ["rustdoc"]
+features = ["java-interface"]
+targets = [
+    "aarch64-linux-android",
+    "armv7-linux-androideabi",
+    "i686-linux-android",
+    "x86_64-linux-android",
+]

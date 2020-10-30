@@ -37,6 +37,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: x86_64-linux-android
           override: true
       - name: Cargo cache
         uses: actions/cache@v2
@@ -52,9 +53,11 @@ jobs:
           key: ${{ runner.os }}-build-rust_stable-docs-${{ hashFiles('**/Cargo.lock') }}
       - name: Documentation
         uses: actions-rs/cargo@v1
+        env:
+          DOCS_RS: 1
         with:
           command: doc
-          args: --manifest-path oboe/Cargo.toml --features rustdoc
+          args: --manifest-path oboe/Cargo.toml --target x86_64-linux-android
 
   build:
     needs:
