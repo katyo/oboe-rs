@@ -1,9 +1,9 @@
 use std::f32::consts::PI;
 
 use oboe::{
-    AudioDeviceDirection, AudioDeviceInfo, AudioFeature, AudioOutputCallback, AudioOutputStreamSafe,
-    AudioOutputStream, AudioStream, AudioStreamAsync, AudioStreamBuilder, DataCallbackResult, DefaultStreamValues,
-    Mono, Output, PerformanceMode, SharingMode,
+    AudioDeviceDirection, AudioDeviceInfo, AudioFeature, AudioOutputCallback, AudioOutputStream,
+    AudioOutputStreamSafe, AudioStream, AudioStreamAsync, AudioStreamBuilder, DataCallbackResult,
+    DefaultStreamValues, Mono, Output, PerformanceMode, SharingMode,
 };
 
 /// Sine-wave generator stream
