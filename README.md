@@ -40,12 +40,16 @@ In order to get proper setup you should add *llvm-config* to your
 executables search path.
 
 In case of using tools with libclang under the hood like __bindgen__
-you must be sure in proper your setup. Otherwise you get an errors
+you must be sure in proper your setup. Otherwise you get errors
 related to missing headers or definitions.
+
+One way to fix such errors is to find the folder containing those
+headers under your NDK or SDK home and set environment variable
+`BINDGEN_EXTRA_CLANG_ARGS=-I/path/to/that/folder`.
 
 To build applications you need recent version of __cargo-apk__ from git,
 which supports latest Android [SDK](https://developer.android.com/studio#command-tools) (28+) and [NDK](https://developer.android.com/ndk) (20+).
-Don't forget to set ANDROID_HOME and NDK_HOME environment variables with paths to installed SDK and NDK.
+Don't forget to set `ANDROID_HOME` and `NDK_HOME` environment variables with paths to installed SDK and NDK.
 
 For building host crates which requires _C_-compiler you usually should
 also set __HOST_CC__ environment variable with path to your _C_-compiler.
