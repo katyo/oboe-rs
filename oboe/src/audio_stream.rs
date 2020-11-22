@@ -39,7 +39,7 @@ pub trait AudioStreamSafe: AudioStreamBase {
      * By combining this with [AudioStream::get_xrun_count()], the latency can be tuned
      * at run-time for each device.
      *
-     * This cannot be set higher than [AudioStream::get_buffer_capacity()].
+     * This cannot be set higher than [AudioStream::get_buffer_capacity_in_frames()].
      */
     fn set_buffer_size_in_frames(&mut self, _requested_frames: i32) -> Result<i32>;
 
