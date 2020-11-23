@@ -39,7 +39,7 @@ pub trait AudioStreamSafe: AudioStreamBase {
      * By combining this with [AudioStream::get_xrun_count()], the latency can be tuned
      * at run-time for each device.
      *
-     * This cannot be set higher than [AudioStream::get_buffer_capacity()].
+     * This cannot be set higher than [AudioStream::get_buffer_capacity_in_frames()].
      */
     fn set_buffer_size_in_frames(&mut self, _requested_frames: i32) -> Result<i32>;
 
@@ -656,11 +656,11 @@ impl<D, T> RawAudioStreamBase for AudioStreamAsync<D, T> {
 
 impl<D, F> RawAudioStream for AudioStreamAsync<D, F> {
     fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        unsafe { transmute(&*self.raw) }
+        &*self.raw
     }
 
     fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        unsafe { transmute(&mut *self.raw) }
+        &mut *self.raw
     }
 }
 
@@ -693,11 +693,11 @@ impl<D, F> AudioStreamSync<D, F> {
 
 impl<D, T> RawAudioStreamBase for AudioStreamSync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&&*self.raw) }
+        unsafe { &*ffi::oboe_AudioStream_getBase(self.raw.0) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { transmute(&mut &mut *self.raw) }
+        unsafe { &mut *ffi::oboe_AudioStream_getBase(self.raw.0) }
     }
 }
 
