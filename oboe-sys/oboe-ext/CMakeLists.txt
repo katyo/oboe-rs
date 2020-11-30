@@ -70,16 +70,16 @@ target_include_directories(oboe-ext
     PRIVATE src ${OBOE_DIR}/src
     PUBLIC include ${OBOE_DIR}/include)
 
-target_compile_options(oboe-ext
-    PRIVATE
+target_compile_options(oboe-ext PRIVATE
     -std=c++14
     -Wall
     -Wextra-semi
     -Wshadow
     -Wshadow-field
+    -fno-rtti
+    -fno-exceptions
     -Ofast
     "$<$<CONFIG:Debug>:-Werror>")
 
-target_compile_definitions(oboe-ext PUBLIC $<$<CONFIG:DEBUG>:OBOE_ENABLE_LOGGING=1>)
-
-target_link_libraries(oboe-ext PRIVATE log OpenSLES)
+target_compile_definitions(oboe-ext PUBLIC
+    $<$<CONFIG:DEBUG>:OBOE_ENABLE_LOGGING=1>)
