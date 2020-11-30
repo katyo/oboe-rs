@@ -30,6 +30,7 @@ optional = true
 shared-link = []
 generate-bindings = ["bindgen"]
 compile-library = ["cmake"]
+static-stdcxx = []
 test = []
 
 [package.metadata.docs.rs]

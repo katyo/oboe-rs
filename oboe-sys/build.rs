@@ -33,14 +33,15 @@ fn main() {
 
         add_libdir(builder.lib_dir);
 
-        #[cfg(not(feature = "shared-link"))]
-        {
-            add_lib("log", false);
-            add_lib("c++_static", false);
-        }
+        #[cfg(feature = "static-stdcxx")]
+        add_lib("c++_static", false);
+
+        #[cfg(not(feature = "static-stdcxx"))]
+        add_lib("c++_shared", false);
 
         add_lib("oboe-ext", !cfg!(feature = "shared-link"));
 
+        add_lib("log", false);
         add_lib("OpenSLES", false);
     }
 }
