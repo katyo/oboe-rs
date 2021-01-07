@@ -9,28 +9,28 @@ license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/katyo/oboe-rs"
 edition = "2018"
-include = ["/build.rs", "/src/*.rs", "/oboe-ext", "/README.md"]
+include = ["/build.rs", "/src/*.rs", "/oboe/include", "/oboe/src", "/oboe-ext/include", "/oboe-ext/src", "/README.md"]
 
 [badges]
 maintenance = { status = "experimental" }
 
 [build-dependencies.fetch_unroll]
-version = "0.2"
-#optional = true
-
-[build-dependencies.cmake]
-version = "0.1"
+version = "0.3"
 optional = true
 
+[build-dependencies.cc]
+version = "1.0.66"
+features = ["parallel"]
+
 [build-dependencies.bindgen]
-version = "0.55"
+version = "0.56"
 optional = true
 
 [features]
 shared-link = []
 generate-bindings = ["bindgen"]
-compile-library = ["cmake"]
-static-stdcxx = []
+fetch-prebuilt = ["fetch_unroll"]
+shared-stdcxx = []
 test = []
 
 [package.metadata.docs.rs]
