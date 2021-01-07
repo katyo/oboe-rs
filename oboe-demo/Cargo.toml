@@ -18,6 +18,9 @@ features = ["java-interface"]
 #features = ["java-interface"]
 optional = true
 
+[dependencies.atomic_float]
+version = "0.1.0"
+
 [dependencies.ndk-glue]
 version = "0.2.0"
 features = ["logger"]
