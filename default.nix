@@ -5,7 +5,7 @@ let
     #toolsVersion = "25.2.5";
     platformToolsVersion = "29.0.6";
     buildToolsVersions = [ "28.0.3" ];
-    includeEmulator = true;
+    #includeEmulator = true;
     #emulatorVersion = "27.2.0";
     platformVersions = [ "16" "28" ];
     #includeSources = false;
@@ -16,7 +16,7 @@ let
     #lldbVersions = [ "2.0.2558144" ];
     #cmakeVersions = [ "3.6.4111459" ];
     includeNDK = true;
-    #ndkVersion = "20";
+    ndkVersion = "21.0.6113669";
     useGoogleAPIs = false;
     useGoogleTVAddOns = false;
     includeExtras = [
