@@ -12,6 +12,7 @@ fn main() {
         _ => false,
     } {
         let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR is set by cargo."));
+        let src_dir = Path::new("oboe");
         let ext_dir = Path::new("oboe-ext");
 
         let target = env::var("TARGET").expect("TARGET is set by cargo.");
@@ -22,9 +23,9 @@ fn main() {
             env!("CARGO_PKG_VERSION"),
             target,
             profile,
-            "https://github.com/google/{package}/archive/8a0601f.tar.gz",
             "https://github.com/katyo/{package}-rs/releases/download/{version}/lib{package}-ext_{target}_{profile}.tar.gz",
             &out_dir,
+            src_dir,
             ext_dir,
         );
 
@@ -33,11 +34,11 @@ fn main() {
 
         add_libdir(builder.lib_dir);
 
-        #[cfg(feature = "static-stdcxx")]
-        add_lib("c++_static", false);
-
-        #[cfg(not(feature = "static-stdcxx"))]
-        add_lib("c++_shared", false);
+        /*if cfg!(feature = "shared-stdcxx") {
+            add_lib("c++_shared", false);
+        } else {
+            add_lib("c++_static", false);
+        }*/
 
         add_lib("oboe-ext", !cfg!(feature = "shared-link"));
 
@@ -47,7 +48,6 @@ fn main() {
 }
 
 struct Builder {
-    pub src_url: String,
     pub src_dir: PathBuf,
 
     pub lib_url: String,
@@ -68,10 +68,10 @@ impl Builder {
         target: impl AsRef<str>,
         profile: impl AsRef<str>,
 
-        src_url: impl AsRef<str>,
         lib_url: impl AsRef<str>,
 
         out_dir: impl AsRef<Path>,
+        src_dir: impl AsRef<Path>,
         ext_dir: impl AsRef<Path>,
     ) -> Self {
         let package = package.as_ref();
@@ -79,10 +79,6 @@ impl Builder {
         let profile = profile.as_ref();
         let target = target.as_ref();
 
-        let src_url = src_url
-            .as_ref()
-            .replace("{package}", package)
-            .replace("{version}", version);
         let lib_url = lib_url
             .as_ref()
             .replace("{package}", package)
@@ -91,10 +87,9 @@ impl Builder {
             .replace("{profile}", profile);
 
         let out_dir = out_dir.as_ref();
-
-        let src_dir = out_dir.join("source");
         let lib_dir = out_dir.join("library");
 
+        let src_dir = src_dir.as_ref().into();
         let ext_dir = ext_dir.as_ref().into();
 
         let bind_file = out_dir.join("bindings.rs").into();
@@ -103,7 +98,6 @@ impl Builder {
         let profile = profile.into();
 
         Self {
-            src_url,
             src_dir,
 
             lib_url,
@@ -117,35 +111,11 @@ impl Builder {
         }
     }
 
-    pub fn fetch(&self) {
-        if self.src_dir.is_dir() {
-            eprintln!(
-                "Sources {} already fetched to {}",
-                self.src_url,
-                self.src_dir.display()
-            );
-        } else {
-            eprintln!(
-                "Fetching sources {} to {}",
-                self.src_url,
-                self.src_dir.display()
-            );
-
-            fetch_unroll::Fetch::from(&self.src_url)
-                .unroll()
-                .strip_components(1)
-                .to(&self.src_dir)
-                .expect("Sources should be fetched.");
-        }
-    }
-
     #[cfg(not(feature = "generate-bindings"))]
     pub fn bindings(&self) {}
 
     #[cfg(feature = "generate-bindings")]
     pub fn bindings(&self) {
-        self.fetch();
-
         let target_os =
             env::var("CARGO_CFG_TARGET_OS").expect("CARGO_CFG_TARGET_OS is set by cargo.");
 
@@ -207,10 +177,10 @@ impl Builder {
             .expect("Couldn't write bindings!");
     }
 
-    #[cfg(any(feature = "test"))]
+    #[cfg(feature = "test")]
     pub fn library(&self) {}
 
-    #[cfg(not(any(feature = "compile-library", feature = "test")))]
+    #[cfg(all(not(feature = "test"), feature = "fetch-prebuilt"))]
     pub fn library(&self) {
         if self.lib_dir.is_dir() {
             eprintln!(
@@ -232,50 +202,110 @@ impl Builder {
         }
     }
 
-    #[cfg(feature = "compile-library")]
+    #[cfg(all(not(feature = "test"), not(feature = "fetch-prebuilt")))]
     pub fn library(&self) {
-        use std::fs::{copy, create_dir_all};
+        let src_files = &[
+            "aaudio/AAudioLoader.cpp",
+            "aaudio/AudioStreamAAudio.cpp",
+            "common/AudioSourceCaller.cpp",
+            "common/AudioStream.cpp",
+            "common/AudioStreamBuilder.cpp",
+            "common/DataConversionFlowGraph.cpp",
+            "common/FilterAudioStream.cpp",
+            "common/FixedBlockAdapter.cpp",
+            "common/FixedBlockReader.cpp",
+            "common/FixedBlockWriter.cpp",
+            "common/LatencyTuner.cpp",
+            "common/SourceFloatCaller.cpp",
+            "common/SourceI16Caller.cpp",
+            "common/Utilities.cpp",
+            "common/QuirksManager.cpp",
+            "fifo/FifoBuffer.cpp",
+            "fifo/FifoController.cpp",
+            "fifo/FifoControllerBase.cpp",
+            "fifo/FifoControllerIndirect.cpp",
+            "flowgraph/FlowGraphNode.cpp",
+            "flowgraph/ChannelCountConverter.cpp",
+            "flowgraph/ClipToRange.cpp",
+            "flowgraph/ManyToMultiConverter.cpp",
+            "flowgraph/MonoToMultiConverter.cpp",
+            "flowgraph/MultiToMonoConverter.cpp",
+            "flowgraph/RampLinear.cpp",
+            "flowgraph/SampleRateConverter.cpp",
+            "flowgraph/SinkFloat.cpp",
+            "flowgraph/SinkI16.cpp",
+            "flowgraph/SinkI24.cpp",
+            "flowgraph/SourceFloat.cpp",
+            "flowgraph/SourceI16.cpp",
+            "flowgraph/SourceI24.cpp",
+            "flowgraph/resampler/IntegerRatio.cpp",
+            "flowgraph/resampler/LinearResampler.cpp",
+            "flowgraph/resampler/MultiChannelResampler.cpp",
+            "flowgraph/resampler/PolyphaseResampler.cpp",
+            "flowgraph/resampler/PolyphaseResamplerMono.cpp",
+            "flowgraph/resampler/PolyphaseResamplerStereo.cpp",
+            "flowgraph/resampler/SincResampler.cpp",
+            "flowgraph/resampler/SincResamplerStereo.cpp",
+            "opensles/AudioInputStreamOpenSLES.cpp",
+            "opensles/AudioOutputStreamOpenSLES.cpp",
+            "opensles/AudioStreamBuffered.cpp",
+            "opensles/AudioStreamOpenSLES.cpp",
+            "opensles/EngineOpenSLES.cpp",
+            "opensles/OpenSLESUtilities.cpp",
+            "opensles/OutputMixerOpenSLES.cpp",
+            "common/StabilizedCallback.cpp",
+            "common/Trace.cpp",
+            "common/Version.cpp",
+        ];
 
-        self.fetch();
+        let ext_files = &[
+            "AudioStreamWrapper.cpp",
+            "AudioStreamBuilderWrapper.cpp",
+            "AudioStreamCallbackWrapper.cpp",
+        ];
 
-        if let Err(_) = env::var(format!("CXX_{}", self.target)) {
-            if let Ok(cc) = env::var(format!("CC_{}", self.target)) {
-                env::set_var(
-                    format!("CXX_{}", self.target),
-                    cc.replace("clang", "clang++"),
-                );
-            }
+        let mut library = cc::Build::new();
+
+        library.cpp(true);
+        library.cpp_link_stdlib(if cfg!(feature = "shared-stdcxx") {
+            "c++_shared"
+        } else {
+            "c++_static"
+        });
+        for flag in &[
+            "-std=c++14",
+            "-Wall",
+            "-Wextra-semi",
+            "-Wshadow",
+            "-Wshadow-field",
+            "-fno-rtti",
+            "-fno-exceptions",
+            //"-Ofast",
+        ] {
+            library.flag(flag);
+        }
+        if self.profile == "debug" {
+            //library.flag("-Werror");
+            library.define("OBOE_ENABLE_LOGGING", "1");
         }
 
-        let library = cmake::Config::new(&self.ext_dir)
-            .define("OBOE_DIR", &self.src_dir)
-            .define(
-                "BUILD_SHARED_LIBS",
-                if cfg!(feature = "shared-link") {
-                    "ON"
-                } else {
-                    "OFF"
-                },
-            )
-            .define("CMAKE_C_COMPILER_WORKS", "1")
-            .define("CMAKE_CXX_COMPILER_WORKS", "1")
-            .always_configure(true)
-            .very_verbose(true)
-            .build_target("all")
-            .build();
+        library.static_flag(!cfg!(feature = "shared-link"));
+        library.shared_flag(cfg!(feature = "shared-link"));
 
-        if !self.lib_dir.is_dir() {
-            create_dir_all(&self.lib_dir).unwrap();
+        library.include(self.src_dir.join("include"));
+        library.include(self.src_dir.join("src"));
+        library.include(self.ext_dir.join("include"));
+        library.include(self.ext_dir.join("src"));
+
+        for file in src_files {
+            library.file(self.src_dir.join("src").join(file));
+        }
+        for file in ext_files {
+            library.file(self.ext_dir.join("src").join(file));
         }
 
-        for lib in &["liboboe-ext.a", "liboboe-ext.so"] {
-            let src = library.join("build").join(lib);
-            let dst = self.lib_dir.join(lib);
-
-            if src.is_file() {
-                copy(src, dst).unwrap();
-            }
-        }
+        library.out_dir(&self.lib_dir);
+        library.compile("oboe-ext");
     }
 }
 

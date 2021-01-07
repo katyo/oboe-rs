@@ -36,8 +36,9 @@ optional = true
 
 [features]
 shared-link = ["oboe-sys/shared-link"]
+shared-stdcxx = ["oboe-sys/shared-stdcxx"]
 generate-bindings = ["oboe-sys/generate-bindings"]
-compile-library = ["oboe-sys/compile-library"]
+fetch-prebuilt = ["oboe-sys/fetch-prebuilt"]
 java-interface = ["ndk", "ndk-glue", "jni"]
 
 [package.metadata.docs.rs]

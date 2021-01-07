@@ -13,10 +13,9 @@ crate-type = ["cdylib"]
 path = "../oboe"
 version = "0.3.0"
 #features = ["generate-bindings"]
-#features = ["generate-bindings", "compile-library"]
-#features = ["compile-library", "java-interface"]
-#features = ["compile-library", "generate-bindings", "java-interface"]
 features = ["java-interface"]
+#features = ["generate-bindings", "java-interface"]
+#features = ["java-interface"]
 optional = true
 
 [dependencies.ndk-glue]
@@ -35,7 +34,9 @@ version = "0.24"
 [features]
 default = ["audio"]
 audio = ["oboe"]
-compile-oboe = ["oboe/compile-library"]
+fetch-prebuilt-oboe = ["oboe/fetch-prebuilt"]
+shared-oboe = ["oboe/shared-link"]
+shared-stdcxx = ["oboe/shared-stdcxx"]
 
 [package.metadata.android]
 android_version = 28
