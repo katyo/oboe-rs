@@ -95,7 +95,7 @@ jobs:
         uses: android-actions/setup-android@v2
       - name: Setup Android NDK
         run: |
-          sdkmanager --sdk_root=$ANDROID_SDK_ROOT ndk-bundle
+          sdkmanager --sdk_root=$ANDROID_SDK_ROOT 'ndk;21.3.6528147'
           echo "$ANDROID_SDK_ROOT/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
       - name: Setup Rust ${{ matrix.rust }} [${{ matrix.target }}]
         uses: actions-rs/toolchain@v1
