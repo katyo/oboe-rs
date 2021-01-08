@@ -264,6 +264,15 @@ impl Builder {
             "AudioStreamCallbackWrapper.cpp",
         ];
 
+        if let Err(_) = env::var(format!("CXX_{}", self.target)) {
+            if let Ok(cc) = env::var(format!("CC_{}", self.target)) {
+                env::set_var(
+                    format!("CXX_{}", self.target),
+                    cc.replace("clang", "clang++"),
+                );
+            }
+        }
+
         let mut library = cc::Build::new();
 
         library.cpp(true);
