@@ -59,9 +59,12 @@ also set __HOST_CC__ environment variable with path to your _C_-compiler.
 Playing sine wave in asynchronous (callback-driven) mode:
 
 ```rust
+use std::f32::consts::PI;
+
 use oboe::{
     AudioOutputCallback,
-    AudioOutputStream,
+    AudioOutputStreamSafe,
+    AudioStream,
     AudioStreamBuilder,
     DataCallbackResult,
     PerformanceMode,
@@ -95,11 +98,11 @@ impl AudioOutputCallback for SineWave {
     type FrameType = (f32, Mono);
 
     // Implement sound data output callback
-    fn on_audio_ready(&mut self, stream: &mut dyn AudioOutputStream, frames: &mut [f32]) -> DataCallbackResult {
+    fn on_audio_ready(&mut self, stream: &mut dyn AudioOutputStreamSafe, frames: &mut [f32]) -> DataCallbackResult {
         // Configure out wave generator
         if self.delta.is_none() {
             let sample_rate = stream.get_sample_rate() as f32;
-            self.delta = (self.frequency2.0PI / sample_rate).into();
+            self.delta = (self.frequency * 2.0 * PI / sample_rate).into();
             println!("Prepare sine wave generator: samplerate={}, time delta={}", sample_rate, self.delta.unwrap());
         }
 
@@ -107,10 +110,10 @@ impl AudioOutputCallback for SineWave {
 
         // Generate audio frames to fill the output buffer
         for frame in frames {
-            *frame = self.gainself.phase.sin();
+            *frame = self.gain * self.phase.sin();
             self.phase += delta;
-            while self.phase > 2.0PI {
-                self.phase -= 2.0PI;
+            while self.phase > 2.0 * PI {
+                self.phase -= 2.0 * PI;
             }
         }
 
@@ -121,24 +124,23 @@ impl AudioOutputCallback for SineWave {
 
 // ...
 
-// Create playback stream
-let mut sine = AudioStreamBuilder::default()
-    // select desired performance mode
-    .set_performance_mode(PerformanceMode::LowLatency)
-    // select desired sharing mode
-    .set_sharing_mode(SharingMode::Shared)
-    // select sound sample format
-    .set_format::<f32>()
-    // select channels configuration
-    .set_channel_count::<Mono>()
-    // set our generator as callback
-    .set_callback(SineWave::default())
-    // open the output stream
-    .open_stream()
-    .unwrap();
+pub fn create_playback_stream() {
+    let mut sine = AudioStreamBuilder::default()
+        // select desired performance mode
+        .set_performance_mode(PerformanceMode::LowLatency)
+        // select desired sharing mode
+        .set_sharing_mode(SharingMode::Shared)
+        // select sound sample format
+        .set_format::<f32>()
+        // select channels configuration
+        .set_channel_count::<Mono>()
+        // set our generator as callback
+        .set_callback(SineWave::default())
+        // open the output stream
+        .open_stream()
+        .unwrap();
 
-// Start playback
-sine.start().unwrap();
+    sine.start().unwrap()
+}
 
-// ...
 ```
