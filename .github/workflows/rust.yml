@@ -301,7 +301,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: cargo-ndk
+          args: --version '<2.0.0' cargo-ndk
 
   cargo-apk:
     runs-on: ubuntu-latest
