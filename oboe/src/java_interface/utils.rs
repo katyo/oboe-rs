@@ -106,7 +106,7 @@ pub fn call_method_string_arg_ret_bool<'a, S: AsRef<str>>(
 
 pub fn call_method_string_arg_ret_string<'a: 'b, 'b, S: AsRef<str>>(
     env: &'b JNIEnv<'a>,
-    subject: JObject,
+    subject: JObject<'a>,
     name: &str,
     arg: S,
 ) -> JResult<JavaStr<'a, 'b>> {
@@ -124,7 +124,7 @@ pub fn call_method_string_arg_ret_string<'a: 'b, 'b, S: AsRef<str>>(
 
 pub fn call_method_string_arg_ret_object<'a>(
     env: &JNIEnv<'a>,
-    subject: JObject,
+    subject: JObject<'a>,
     method: &str,
     arg: &str,
 ) -> JResult<JObject<'a>> {
@@ -137,7 +137,7 @@ pub fn call_method_string_arg_ret_object<'a>(
     .l()
 }
 
-pub fn get_package_manager<'a>(env: &JNIEnv<'a>, subject: JObject) -> JResult<JObject<'a>> {
+pub fn get_package_manager<'a>(env: &JNIEnv<'a>, subject: JObject<'a>) -> JResult<JObject<'a>> {
     env.call_method(
         subject,
         "getPackageManager",
@@ -153,7 +153,7 @@ pub fn has_system_feature<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) ->
 
 pub fn get_system_service<'a>(
     env: &JNIEnv<'a>,
-    subject: JObject,
+    subject: JObject<'a>,
     name: &str,
 ) -> JResult<JObject<'a>> {
     call_method_string_arg_ret_object(env, subject, "getSystemService", name)
@@ -161,7 +161,7 @@ pub fn get_system_service<'a>(
 
 pub fn get_property<'a: 'b, 'b>(
     env: &'b JNIEnv<'a>,
-    subject: JObject,
+    subject: JObject<'a>,
     name: &str,
 ) -> JResult<JavaStr<'a, 'b>> {
     call_method_string_arg_ret_string(env, subject, "getProperty", name)
@@ -169,7 +169,7 @@ pub fn get_property<'a: 'b, 'b>(
 
 pub fn get_devices<'a: 'b, 'b>(
     env: &'b JNIEnv<'a>,
-    subject: JObject,
+    subject: JObject<'a>,
     flags: i32,
 ) -> JResult<JObject<'a>> {
     env.call_method(
