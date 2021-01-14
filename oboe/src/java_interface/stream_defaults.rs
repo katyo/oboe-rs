@@ -11,6 +11,7 @@ impl DefaultStreamValues {
     /**
      * Try request defaults from AudioManager properties.
      */
+    #[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
     pub fn init() -> Result<(), String> {
         let activity = get_activity();
         let sdk_version = activity.sdk_version();

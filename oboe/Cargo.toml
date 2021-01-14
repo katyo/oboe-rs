@@ -40,9 +40,10 @@ shared-stdcxx = ["oboe-sys/shared-stdcxx"]
 generate-bindings = ["oboe-sys/generate-bindings"]
 fetch-prebuilt = ["oboe-sys/fetch-prebuilt"]
 java-interface = ["ndk", "ndk-glue", "jni"]
+doc-cfg = []
 
 [package.metadata.docs.rs]
-features = ["java-interface"]
+features = ["java-interface", "doc-cfg"]
 targets = [
     "aarch64-linux-android",
     "armv7-linux-androideabi",

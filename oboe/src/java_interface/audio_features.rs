@@ -9,6 +9,7 @@ use super::{
 /**
  * The Android audio features
  */
+#[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AudioFeature {
     LowLatency,

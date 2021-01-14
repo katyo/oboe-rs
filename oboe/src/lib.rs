@@ -119,6 +119,8 @@
  * ```
  */
 
+#![cfg_attr(feature = "doc-cfg", feature(doc_cfg))]
+
 mod audio_stream;
 mod audio_stream_base;
 mod audio_stream_builder;

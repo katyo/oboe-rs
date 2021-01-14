@@ -34,6 +34,7 @@ impl AudioManager {
 /**
  * The Android audio device info
  */
+#[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
 #[derive(Debug, Clone)]
 pub struct AudioDeviceInfo {
     /**
@@ -80,6 +81,7 @@ pub struct AudioDeviceInfo {
 /**
  * The type of audio device
  */
+#[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
 #[derive(Debug, Clone, Copy, FromPrimitive)]
 #[non_exhaustive]
 #[repr(i32)]
@@ -114,6 +116,7 @@ pub enum AudioDeviceType {
 /**
  * The direction of audio device
  */
+#[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
 pub enum AudioDeviceDirection {

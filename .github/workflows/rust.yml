@@ -40,7 +40,7 @@ jobs:
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           target: x86_64-linux-android
           override: true
       - name: Cargo cache
@@ -49,19 +49,19 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-rust_stable-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-rust_nightly-${{ hashFiles('**/Cargo.lock') }}
       - name: Build cache
         uses: actions/cache@v2
         with:
           path: target
-          key: ${{ runner.os }}-build-rust_stable-docs-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-build-rust_nightly-docs-${{ hashFiles('**/Cargo.lock') }}
       - name: Documentation
         uses: actions-rs/cargo@v1
         env:
           DOCS_RS: 1
         with:
           command: doc
-          args: --manifest-path oboe/Cargo.toml --target x86_64-linux-android
+          args: --manifest-path oboe/Cargo.toml --target x86_64-linux-android --features java-interface,doc-cfg
 
   build:
     needs:
