@@ -33,7 +33,7 @@
  *
  * Playing sine wave in asynchronous (callback-driven) mode:
  *
- * ```ignore
+ * ```no_run
  * use oboe::{
  *     AudioOutputCallback,
  *     AudioOutputStream,

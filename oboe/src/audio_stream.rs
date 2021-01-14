@@ -36,10 +36,10 @@ pub trait AudioStreamSafe: AudioStreamBase {
     /**
      * This can be used to adjust the latency of the buffer by changing
      * the threshold where blocking will occur.
-     * By combining this with [AudioStream::get_xrun_count()], the latency can be tuned
+     * By combining this with [`AudioStreamSafe::get_xrun_count`], the latency can be tuned
      * at run-time for each device.
      *
-     * This cannot be set higher than [AudioStream::get_buffer_capacity_in_frames()].
+     * This cannot be set higher than [`AudioStreamBase::get_buffer_capacity_in_frames`].
      */
     fn set_buffer_size_in_frames(&mut self, _requested_frames: i32) -> Result<i32>;
 
@@ -220,7 +220,7 @@ pub trait AudioStream: AudioStreamSafe {
      * ```
      *
      * If the state does not change within the timeout period then it will
-     * return [Error::Timeout]. This is true even if timeout_nanoseconds is zero.
+     * return [`Error::Timeout`](crate::Error::Timeout). This is true even if timeout_nanoseconds is zero.
      */
     fn wait_for_state_change(
         &mut self,
