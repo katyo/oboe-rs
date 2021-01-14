@@ -111,7 +111,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cargo/bin/cargo-ndk
-          key: ${{ runner.os }}-cargo-ndk
+          key: ${{ runner.os }}-cargo-ndk-v1
       - name: Cargo cache
         uses: actions/cache@v2
         with:
@@ -299,13 +299,13 @@ jobs:
         id: cache
         with:
           path: ~/.cargo/bin/cargo-ndk
-          key: ${{ runner.os }}-cargo-ndk
+          key: ${{ runner.os }}-cargo-ndk-v1
       - name: Setup cargo ndk
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: --version '<2.0.0' cargo-ndk
+          args: cargo-ndk --version ^1
 
   cargo-apk:
     runs-on: ubuntu-latest
