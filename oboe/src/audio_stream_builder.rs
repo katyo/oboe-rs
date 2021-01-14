@@ -382,7 +382,7 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * a getId() method (as well as other type information), that should be passed
      * to this method.
      *
-     * When `java-interface` feature is used you can call [AudioDeviceInfo::request()] for listing devices info.
+     * When `java-interface` feature is used you can call [`AudioDeviceInfo::request`](crate::AudioDeviceInfo::request) for listing devices info.
      *
      * Note that when using OpenSL ES, this will be ignored and the created
      * stream will have device ID unspecified.

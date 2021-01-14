@@ -15,33 +15,35 @@ include = ["/src/**/*.rs", "/README.md"]
 maintenance = { status = "experimental" }
 
 [dependencies]
-num-traits = "0.2"
-num-derive = "0.3"
+num-traits = "^0.2"
+num-derive = "^0.3"
 
 [dependencies.oboe-sys]
 version = "0.3.0"
 path = "../oboe-sys"
 
 [dependencies.ndk]
-version = "0.2"
+version = "^0.2"
 optional = true
 
 [dependencies.ndk-glue]
-version = "0.2"
+version = "^0.2"
 optional = true
 
 [dependencies.jni]
-version = "0.17"
+version = "^0.18"
 optional = true
 
 [features]
 shared-link = ["oboe-sys/shared-link"]
+shared-stdcxx = ["oboe-sys/shared-stdcxx"]
 generate-bindings = ["oboe-sys/generate-bindings"]
-compile-library = ["oboe-sys/compile-library"]
+fetch-prebuilt = ["oboe-sys/fetch-prebuilt"]
 java-interface = ["ndk", "ndk-glue", "jni"]
+doc-cfg = []
 
 [package.metadata.docs.rs]
-features = ["java-interface"]
+features = ["java-interface", "doc-cfg"]
 targets = [
     "aarch64-linux-android",
     "armv7-linux-androideabi",

@@ -16,6 +16,7 @@ impl AudioDeviceInfo {
     /**
      * Request audio devices using Android Java API
      */
+    #[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
     pub fn request(direction: AudioDeviceDirection) -> Result<Vec<AudioDeviceInfo>, String> {
         let activity = get_activity();
         let sdk_version = activity.sdk_version();
@@ -64,8 +65,7 @@ fn try_request_devices_info<'a>(
                 direction: AudioDeviceDirection::new(
                     call_method_no_args_ret_bool(&env, device, "isSource")?,
                     call_method_no_args_ret_bool(&env, device, "isSink")?,
-                )
-                .ok_or_else(|| "Invalid device direction")?,
+                ),
                 channel_counts: call_method_no_args_ret_int_array(
                     &env,
                     device,

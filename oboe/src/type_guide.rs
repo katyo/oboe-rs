@@ -10,8 +10,6 @@ pub struct Unspecified;
  */
 pub trait IsDirection {
     const DIRECTION: Direction;
-    // type BufferType<T: IsFrameType>;
-    // ^unstable feature
 }
 
 /**
@@ -21,8 +19,6 @@ pub struct Input;
 
 impl IsDirection for Input {
     const DIRECTION: Direction = Direction::Input;
-    // type BufferType<'b, T: IsFrameType> = &'b [<T as IsFrameType>::Type];
-    // ^unstable feature
 }
 
 /**
@@ -32,8 +28,6 @@ pub struct Output;
 
 impl IsDirection for Output {
     const DIRECTION: Direction = Direction::Output;
-    // type BufferType<'b, T: IsFrameType> = &'b mut [<T as IsFrameType>::Type];
-    // ^unstable feature
 }
 
 /**

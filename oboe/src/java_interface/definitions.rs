@@ -34,6 +34,7 @@ impl AudioManager {
 /**
  * The Android audio device info
  */
+#[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
 #[derive(Debug, Clone)]
 pub struct AudioDeviceInfo {
     /**
@@ -80,6 +81,7 @@ pub struct AudioDeviceInfo {
 /**
  * The type of audio device
  */
+#[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
 #[derive(Debug, Clone, Copy, FromPrimitive)]
 #[non_exhaustive]
 #[repr(i32)]
@@ -114,31 +116,33 @@ pub enum AudioDeviceType {
 /**
  * The direction of audio device
  */
+#[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
 pub enum AudioDeviceDirection {
+    Dumb = 0,
     Input = AudioManager::GET_DEVICES_INPUTS,
     Output = AudioManager::GET_DEVICES_OUTPUTS,
     InputOutput = AudioManager::GET_DEVICES_ALL,
 }
 
 impl AudioDeviceDirection {
-    pub fn new(is_input: bool, is_output: bool) -> Option<Self> {
+    pub fn new(is_input: bool, is_output: bool) -> Self {
         use self::AudioDeviceDirection::*;
         match (is_input, is_output) {
-            (true, true) => Some(InputOutput),
-            (false, true) => Some(Output),
-            (true, false) => Some(Input),
-            _ => None,
+            (true, true) => InputOutput,
+            (false, true) => Output,
+            (true, false) => Input,
+            _ => Dumb,
         }
     }
 
     pub fn is_input(&self) -> bool {
-        *self != AudioDeviceDirection::Output
+        0 < *self as i32 & AudioDeviceDirection::Input as i32
     }
 
     pub fn is_output(&self) -> bool {
-        *self != AudioDeviceDirection::Input
+        0 < *self as i32 & AudioDeviceDirection::Output as i32
     }
 }
 
