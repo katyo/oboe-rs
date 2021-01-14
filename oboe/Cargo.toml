@@ -15,19 +15,19 @@ include = ["/src/**/*.rs", "/README.md"]
 maintenance = { status = "experimental" }
 
 [dependencies]
-num-traits = "0.2"
-num-derive = "0.3"
+num-traits = "^0.2"
+num-derive = "^0.3"
 
 [dependencies.oboe-sys]
 version = "0.3.0"
 path = "../oboe-sys"
 
 [dependencies.ndk]
-version = "0.2"
+version = "^0.2"
 optional = true
 
 [dependencies.ndk-glue]
-version = "0.2"
+version = "^0.2"
 optional = true
 
 [dependencies.jni]

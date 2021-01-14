@@ -15,15 +15,15 @@ include = ["/build.rs", "/src/*.rs", "/oboe/include", "/oboe/src", "/oboe-ext/in
 maintenance = { status = "experimental" }
 
 [build-dependencies.fetch_unroll]
-version = "0.3"
+version = "^0.3"
 optional = true
 
 [build-dependencies.cc]
-version = "1.0.66"
+version = "^1.0"
 features = ["parallel"]
 
 [build-dependencies.bindgen]
-version = "0.56"
+version = "^0.56"
 optional = true
 
 [features]
