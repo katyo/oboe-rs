@@ -65,8 +65,7 @@ fn try_request_devices_info<'a>(
                 direction: AudioDeviceDirection::new(
                     call_method_no_args_ret_bool(&env, device, "isSource")?,
                     call_method_no_args_ret_bool(&env, device, "isSink")?,
-                )
-                .ok_or_else(|| "Invalid device direction")?,
+                ),
                 channel_counts: call_method_no_args_ret_int_array(
                     &env,
                     device,
