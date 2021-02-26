@@ -622,7 +622,8 @@ impl<'s> RawAudioOutputStream for AudioStreamRef<'s, Output> {}
 pub struct AudioStreamAsync<D, F> {
     raw: AudioStreamHandle,
 
-    #[used]
+    // Needed to keep callback alive
+    #[allow(dead_code)]
     callback: AudioCallbackWrapper<D, F>,
 }
 
