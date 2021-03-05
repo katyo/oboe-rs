@@ -23,7 +23,7 @@ version = "0.4.0"
 path = "../oboe-sys"
 
 [dependencies.ndk]
-version = "^0.2"
+version = "^0.3"
 optional = true
 
 [dependencies.ndk-glue]
