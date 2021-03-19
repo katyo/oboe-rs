@@ -1,6 +1,6 @@
 [package]
 name = "oboe"
-version = "0.4.0"
+version = "0.4.1"
 description = "Safe interface for oboe an android library for low latency audio IO"
 categories = ["api-bindings", "multimedia::audio"]
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
