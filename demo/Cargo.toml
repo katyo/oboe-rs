@@ -10,7 +10,7 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies.oboe]
-path = "../oboe"
+path = ".."
 version = "0.4.1"
 #features = ["generate-bindings"]
 features = ["java-interface"]
