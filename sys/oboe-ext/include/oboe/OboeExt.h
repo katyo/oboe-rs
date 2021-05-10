@@ -66,7 +66,7 @@ namespace oboe {
   Result AudioStream_requestPause(AudioStream *oboeStream);
   Result AudioStream_requestFlush(AudioStream *oboeStream);
   Result AudioStream_requestStop(AudioStream *oboeStream);
-  StreamState AudioStream_getState(const AudioStream *oboeStream);
+  StreamState AudioStream_getState(AudioStream *oboeStream);
   Result AudioStream_waitForStateChange(AudioStream *oboeStream,
                                         StreamState inputState,
                                         StreamState *nextState,
@@ -75,7 +75,7 @@ namespace oboe {
   AudioStream_setBufferSizeInFrames(AudioStream *oboeStream,
                                     int32_t requestedFrames);
   ResultWithValue<int32_t>
-  AudioStream_getXRunCount(const AudioStream *oboeStream);
+  AudioStream_getXRunCount(AudioStream *oboeStream);
   bool AudioStream_isXRunCountSupported(const AudioStream *oboeStream);
   int32_t AudioStream_getFramesPerBurst(AudioStream *oboeStream);
   ResultWithValue<double>

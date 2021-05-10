@@ -45,6 +45,10 @@ impl IsFormat for i16 {
     const FORMAT: AudioFormat = AudioFormat::I16;
 }
 
+impl IsFormat for i32 {
+    const FORMAT: AudioFormat = AudioFormat::I32;
+}
+
 impl IsFormat for f32 {
     const FORMAT: AudioFormat = AudioFormat::F32;
 }

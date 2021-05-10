@@ -218,6 +218,8 @@ impl Builder {
             "common/LatencyTuner.cpp",
             "common/SourceFloatCaller.cpp",
             "common/SourceI16Caller.cpp",
+            "common/SourceI24Caller.cpp",
+            "common/SourceI32Caller.cpp",
             "common/Utilities.cpp",
             "common/QuirksManager.cpp",
             "fifo/FifoBuffer.cpp",
@@ -235,9 +237,11 @@ impl Builder {
             "flowgraph/SinkFloat.cpp",
             "flowgraph/SinkI16.cpp",
             "flowgraph/SinkI24.cpp",
+            "flowgraph/SinkI32.cpp",
             "flowgraph/SourceFloat.cpp",
             "flowgraph/SourceI16.cpp",
             "flowgraph/SourceI24.cpp",
+            "flowgraph/SourceI32.cpp",
             "flowgraph/resampler/IntegerRatio.cpp",
             "flowgraph/resampler/LinearResampler.cpp",
             "flowgraph/resampler/MultiChannelResampler.cpp",
@@ -282,7 +286,7 @@ impl Builder {
             "c++_static"
         });
         for flag in &[
-            "-std=c++14",
+            "-std=c++17",
             "-Wall",
             "-Wextra-semi",
             "-Wshadow",
