@@ -19,10 +19,10 @@ pub enum AudioFeature {
     Midi,
 }
 
-impl Into<&'static str> for AudioFeature {
-    fn into(self) -> &'static str {
-        use self::AudioFeature::*;
-        match self {
+impl From<AudioFeature> for &'static str {
+    fn from(feature: AudioFeature) -> Self {
+        use AudioFeature::*;
+        match feature {
             LowLatency => PackageManager::FEATURE_AUDIO_LOW_LATENCY,
             Output => PackageManager::FEATURE_AUDIO_OUTPUT,
             Pro => PackageManager::FEATURE_AUDIO_PRO,

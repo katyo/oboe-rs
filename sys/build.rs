@@ -7,44 +7,44 @@ use std::{
 };
 
 fn main() {
-    if !match env::var("DOCS_RS") {
-        Ok(s) if s == "1" => true,
-        _ => false,
-    } {
-        let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR is set by cargo."));
-        let src_dir = Path::new("oboe");
-        let ext_dir = Path::new("oboe-ext");
-
-        let target = env::var("TARGET").expect("TARGET is set by cargo.");
-        let profile = env::var("PROFILE").expect("PROFILE is set by cargo.");
-
-        let builder = Builder::new(
-            "oboe",
-            env!("CARGO_PKG_VERSION"),
-            target,
-            profile,
-            "https://github.com/katyo/{package}-rs/releases/download/{version}/lib{package}-ext_{target}_{profile}.tar.gz",
-            &out_dir,
-            src_dir,
-            ext_dir,
-        );
-
-        builder.bindings();
-        builder.library();
-
-        add_libdir(builder.lib_dir);
-
-        /*if cfg!(feature = "shared-stdcxx") {
-            add_lib("c++_shared", false);
-        } else {
-            add_lib("c++_static", false);
-        }*/
-
-        add_lib("oboe-ext", !cfg!(feature = "shared-link"));
-
-        add_lib("log", false);
-        add_lib("OpenSLES", false);
+    // Skip build on docs.rs and CI
+    if matches!(env::var("DOCS_RS"), Ok(s) if s == "1") {
+        return;
     }
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR is set by cargo."));
+    let src_dir = Path::new("oboe");
+    let ext_dir = Path::new("oboe-ext");
+
+    let target = env::var("TARGET").expect("TARGET is set by cargo.");
+    let profile = env::var("PROFILE").expect("PROFILE is set by cargo.");
+
+    let builder = Builder::new(
+        "oboe",
+        env!("CARGO_PKG_VERSION"),
+        target,
+        profile,
+        "https://github.com/katyo/{package}-rs/releases/download/{version}/lib{package}-ext_{target}_{profile}.tar.gz",
+        &out_dir,
+        src_dir,
+        ext_dir,
+    );
+
+    builder.bindings();
+    builder.library();
+
+    add_libdir(builder.lib_dir);
+
+    /*if cfg!(feature = "shared-stdcxx") {
+        add_lib("c++_shared", false);
+    } else {
+        add_lib("c++_static", false);
+    }*/
+
+    add_lib("oboe-ext", !cfg!(feature = "shared-link"));
+
+    add_lib("log", false);
+    add_lib("OpenSLES", false);
 }
 
 struct Builder {
@@ -61,6 +61,7 @@ struct Builder {
 }
 
 impl Builder {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         package: impl AsRef<str>,
         version: impl AsRef<str>,
@@ -92,7 +93,7 @@ impl Builder {
         let src_dir = src_dir.as_ref().into();
         let ext_dir = ext_dir.as_ref().into();
 
-        let bind_file = out_dir.join("bindings.rs").into();
+        let bind_file = out_dir.join("bindings.rs");
 
         let target = target.into();
         let profile = profile.into();
@@ -268,7 +269,7 @@ impl Builder {
             "AudioStreamCallbackWrapper.cpp",
         ];
 
-        if let Err(_) = env::var(format!("CXX_{}", self.target)) {
+        if env::var(format!("CXX_{}", self.target)).is_err() {
             if let Ok(cc) = env::var(format!("CC_{}", self.target)) {
                 env::set_var(
                     format!("CXX_{}", self.target),

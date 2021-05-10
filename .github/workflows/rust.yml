@@ -89,10 +89,61 @@ jobs:
           body: |
             READMEs should be updated to be consistent with latest changes
 
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
+      - name: Setup JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      - name: Setup Android NDK
+        env:
+          NDK_VERSION: 21.3.6528147
+          TRIPLE: x86_64-linux-android
+        run: |
+          rm -rf $ANDROID_SDK_ROOT/ndk-bundle
+          sdkmanager --sdk_root=$ANDROID_SDK_ROOT "ndk;$NDK_VERSION" | grep -v = || true
+          ln -s $ANDROID_SDK_ROOT/ndk/$NDK_VERSION $ANDROID_SDK_ROOT/ndk-bundle
+          echo "$ANDROID_SDK_ROOT/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+          TRIPLE_ENV=$(echo $TRIPLE | tr '-' '_')
+          echo "CC_${TRIPLE_ENV}=${TRIPLE}21-clang" >> $GITHUB_ENV
+          echo "CXX_${TRIPLE_ENV}=${TRIPLE}21-clang++" >> $GITHUB_ENV
+          echo "AR_${TRIPLE_ENV}=${TRIPLE}-ar" >> $GITHUB_ENV
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: x86_64-linux-android
+          profile: minimal
+          components: clippy
+          default: true
+          override: true
+      - name: Cargo cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-rust_nightly-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build cache
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-build-rust_nightly-check-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all --features java-interface --all-targets --target x86_64-linux-android
+
   build:
     needs:
       - format
       - docs
+      - check
       - cargo-ndk
     runs-on: ubuntu-latest
     strategy:
