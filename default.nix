@@ -3,8 +3,8 @@ with pkgs;
 let
   androidComposition = androidenv.composeAndroidPackages {
     #toolsVersion = "25.2.5";
-    platformToolsVersion = "30.0.5"; #"29.0.6";
-    buildToolsVersions = [ "28.0.3" ];
+    platformToolsVersion = "31.0.2";
+    buildToolsVersions = [ "30.0.3" ];
     #includeEmulator = true;
     #emulatorVersion = "27.2.0";
     platformVersions = [ "16" "28" ];
