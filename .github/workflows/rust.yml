@@ -17,6 +17,9 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          profile: minimal
+          components: rustfmt
+          default: true
           override: true
       - name: Cargo cache
         uses: actions/cache@v2
@@ -43,6 +46,9 @@ jobs:
         with:
           toolchain: nightly
           target: x86_64-linux-android
+          profile: minimal
+          components: rust-docs
+          default: true
           override: true
       - name: Cargo cache
         uses: actions/cache@v2
@@ -126,6 +132,9 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
+          profile: minimal
+          components: rustfmt
+          default: true
           override: true
       - name: Setup Cargo ndk
         uses: actions/cache@v2
