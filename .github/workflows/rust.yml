@@ -21,13 +21,7 @@ jobs:
           components: rustfmt
           default: true
           override: true
-      - name: Cargo cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-rust_stable-${{ hashFiles('**/Cargo.lock') }}
+      - uses: Swatinem/rust-cache@v1
       - name: Format
         uses: actions-rs/cargo@v1
         with:
@@ -50,18 +44,7 @@ jobs:
           components: rust-docs
           default: true
           override: true
-      - name: Cargo cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-rust_nightly-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build cache
-        uses: actions/cache@v2
-        with:
-          path: target
-          key: ${{ runner.os }}-build-rust_nightly-docs-${{ hashFiles('**/Cargo.lock') }}
+      - uses: Swatinem/rust-cache@v1
       - name: Documentation
         uses: actions-rs/cargo@v1
         env:
@@ -122,18 +105,7 @@ jobs:
           components: clippy
           default: true
           override: true
-      - name: Cargo cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-rust_nightly-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build cache
-        uses: actions/cache@v2
-        with:
-          path: target
-          key: ${{ runner.os }}-build-rust_nightly-check-${{ hashFiles('**/Cargo.lock') }}
+      - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -192,18 +164,7 @@ jobs:
         with:
           path: ~/.cargo/bin/cargo-ndk
           key: ${{ runner.os }}-cargo-ndk-v1
-      - name: Cargo cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-rust_${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build cache
-        uses: actions/cache@v2
-        with:
-          path: target
-          key: ${{ runner.os }}-build-rust_${{ matrix.rust }}-target_${{ matrix.target }}-profile_${{ matrix.profile }}-${{ hashFiles('**/Cargo.lock') }}
+      - uses: Swatinem/rust-cache@v1
       - name: Prepare config
         id: config
         run: |
@@ -300,18 +261,7 @@ jobs:
         with:
           path: ~/.cargo/bin/cargo-apk
           key: ${{ runner.os }}-cargo-apk
-      - name: Cargo cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-demo_apk-${{ hashFiles('**/Cargo.lock') }}
-      - name: Build cache
-        uses: actions/cache@v2
-        with:
-          path: target
-          key: ${{ runner.os }}-build-demo_apk-${{ hashFiles('**/Cargo.lock') }}
+      - uses: Swatinem/rust-cache@v1
       - name: Build demo apk
         uses: actions-rs/cargo@v1
         with:
