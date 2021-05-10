@@ -1,6 +1,6 @@
 [package]
 name = "oboe-sys"
-version = "0.4.0"
+version = "0.4.2"
 description = "Unsafe bindings for oboe an android library for low latency audio IO"
 categories = ["external-ffi-bindings", "multimedia::audio"]
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
@@ -15,15 +15,15 @@ include = ["/build.rs", "/src/*.rs", "/oboe/include", "/oboe/src", "/oboe-ext/in
 maintenance = { status = "experimental" }
 
 [build-dependencies.fetch_unroll]
-version = "^0.3"
+version = "0.3"
 optional = true
 
 [build-dependencies.cc]
-version = "^1.0"
+version = "1.0"
 features = ["parallel"]
 
 [build-dependencies.bindgen]
-version = "^0.56"
+version = "0.58"
 optional = true
 
 [features]
