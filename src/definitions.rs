@@ -84,6 +84,16 @@ pub enum AudioFormat {
     I16 = ffi::oboe_AudioFormat_I16,
 
     /**
+     * Signed 24-bit integers.
+     */
+    I24 = ffi::oboe_AudioFormat_I24,
+
+    /**
+     * Signed 32-bit integers.
+     */
+    I32 = ffi::oboe_AudioFormat_I32,
+
+    /**
      * Single precision floating points.
      */
     F32 = ffi::oboe_AudioFormat_Float,

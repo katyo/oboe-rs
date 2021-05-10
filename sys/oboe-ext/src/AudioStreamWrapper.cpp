@@ -1,10 +1,5 @@
 #include "oboe/OboeExt.h"
 
-// !!!!!!!!!!!!!! DIRTY HACK !!!!!!!!!!!!!
-/*extern "C" {
-  void *__dso_handle __attribute__((weak));
-}*/
-
 namespace oboe {
   void AudioStream_delete(AudioStream *oboeStream) {
     delete oboeStream;
@@ -30,7 +25,7 @@ namespace oboe {
     return oboeStream->requestStop();
   }
 
-  StreamState AudioStream_getState(const AudioStream *oboeStream) {
+  StreamState AudioStream_getState(AudioStream *oboeStream) {
     return oboeStream->getState();
   }
 
@@ -50,7 +45,7 @@ namespace oboe {
   }
 
   ResultWithValue<int32_t>
-  AudioStream_getXRunCount(const AudioStream *oboeStream) {
+  AudioStream_getXRunCount(AudioStream *oboeStream) {
     return oboeStream->getXRunCount();
   }
 
