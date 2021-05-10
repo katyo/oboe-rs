@@ -81,10 +81,9 @@ impl Default for AudioStreamBuilder<Output, Unspecified, Unspecified> {
     }
 }
 
-impl<D, C, T> Into<AudioStreamBuilderHandle> for AudioStreamBuilder<D, C, T> {
-    fn into(self) -> AudioStreamBuilderHandle {
-        let Self { raw, .. } = self;
-        raw
+impl<D, C, T> From<AudioStreamBuilder<D, C, T>> for AudioStreamBuilderHandle {
+    fn from(builder: AudioStreamBuilder<D, C, T>) -> Self {
+        builder.raw
     }
 }
 

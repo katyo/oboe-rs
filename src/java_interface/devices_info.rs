@@ -75,8 +75,7 @@ fn try_request_devices_info<'a>(
                 formats: call_method_no_args_ret_int_array(&env, device, "getEncodings")?
                     .into_iter()
                     .map(AudioFormat::from_encoding)
-                    .filter(Option::is_some)
-                    .map(Option::unwrap)
+                    .flatten()
                     .collect::<Vec<_>>(),
             })
         })

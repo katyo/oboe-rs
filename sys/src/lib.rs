@@ -12,7 +12,14 @@
 Usually you shouldn't use this crate directly, instead use [oboe](https://crates.io/crates/oboe) crate which provides safe interface.
 */
 
-#![allow(non_upper_case_globals, non_camel_case_types, non_snake_case)]
+#![allow(
+    non_upper_case_globals,
+    non_camel_case_types,
+    non_snake_case,
+    deref_nullptr, // TODO: Remove after closing https://github.com/rust-lang/rust-bindgen/issues/1651
+    clippy::redundant_static_lifetimes, // TODO: Remove after that this issue will be fixed in bindgen
+    clippy::missing_safety_doc
+)]
 
 #[cfg(all(not(target_os = "android"), not(feature = "test")))]
 compile_error!("Currently oboe-sys only supports Android platform");
