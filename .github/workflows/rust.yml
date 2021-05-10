@@ -32,6 +32,7 @@ jobs:
           args: --all -- --check
 
   docs:
+    needs: cargo-readme
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -62,6 +63,25 @@ jobs:
         with:
           command: doc
           args: --target x86_64-linux-android --features java-interface,doc-cfg
+      - name: Setup Cargo readme
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/bin/cargo-readme
+          key: ${{ runner.os }}-cargo-readme
+      - name: Generate READMEs
+        run: |
+          cargo readme --no-title --no-indent-headings --no-license --no-badges > README.md
+          (cd sys && cargo readme --no-title --no-indent-headings --no-license --no-badges > README.md)
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          base: ${{ github.head_ref }}
+          commit-message: Updated READMEs
+          branch: update-readmes
+          delete-branch: true
+          title: Update READMEs
+          body: |
+            READMEs should be updated to be consistent with latest changes
 
   build:
     needs:
@@ -290,6 +310,22 @@ jobs:
           registry-token: ${{ secrets.CRATES_TOKEN }}
           args: --no-verify
           #dry-run: true
+
+  cargo-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare cache
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/.cargo/bin/cargo-readme
+          key: ${{ runner.os }}-cargo-readme
+      - name: Install cargo readme
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-readme
 
   cargo-ndk:
     runs-on: ubuntu-latest
