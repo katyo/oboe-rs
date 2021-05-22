@@ -62,6 +62,7 @@ jobs:
           cargo readme --no-title --no-indent-headings --no-license --no-badges > README.md
           (cd sys && cargo readme --no-title --no-indent-headings --no-license --no-badges > README.md)
       - name: Create Pull Request
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: peter-evans/create-pull-request@v3
         with:
           base: ${{ github.head_ref }}
