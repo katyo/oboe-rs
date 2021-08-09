@@ -31,7 +31,7 @@ version = "0.3"
 optional = true
 
 [dependencies.jni]
-version = "0.18"
+version = "0.19"
 optional = true
 
 [features]
