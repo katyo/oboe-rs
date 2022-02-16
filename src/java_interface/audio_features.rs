@@ -1,6 +1,6 @@
 use super::{
     utils::{
-        get_activity, get_package_manager, has_system_feature, with_attached, JNIEnv, JObject,
+        get_context, get_package_manager, has_system_feature, with_attached, JNIEnv, JObject,
         JResult,
     },
     PackageManager,
@@ -37,9 +37,9 @@ impl AudioFeature {
      * Check availability of an audio feature using Android Java API
      */
     pub fn has(&self) -> Result<bool, String> {
-        let activity = get_activity();
+        let context = get_context();
 
-        with_attached(activity, |env, activity| {
+        with_attached(context, |env, activity| {
             try_check_system_feature(env, activity, (*self).into())
         })
         .map_err(|error| error.to_string())
