@@ -6,7 +6,7 @@ use super::{
     utils::{
         call_method_no_args_ret_bool, call_method_no_args_ret_char_sequence,
         call_method_no_args_ret_int, call_method_no_args_ret_int_array,
-        call_method_no_args_ret_string, get_activity, get_devices, get_system_service,
+        call_method_no_args_ret_string, get_context, get_devices, get_system_service,
         with_attached, JNIEnv, JObject, JResult,
     },
     AudioDeviceDirection, AudioDeviceInfo, Context,
@@ -18,26 +18,32 @@ impl AudioDeviceInfo {
      */
     #[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
     pub fn request(direction: AudioDeviceDirection) -> Result<Vec<AudioDeviceInfo>, String> {
-        let activity = get_activity();
-        let sdk_version = activity.sdk_version();
+        let context = get_context();
 
-        if sdk_version >= 23 {
-            with_attached(activity, |env, activity| {
-                try_request_devices_info(env, activity, direction)
-            })
-            .map_err(|error| error.to_string())
-        } else {
-            Err("Method unsupported".into())
-        }
+        with_attached(context, |env, context| {
+            let sdk_version = env
+                .get_static_field("android/os/Build$VERSION", "SDK_INT", "I")?
+                .i()?;
+
+            if sdk_version >= 23 {
+                try_request_devices_info(env, context, direction)
+            } else {
+                Err(jni::errors::Error::MethodNotFound {
+                    name: "".into(),
+                    sig: "".into(),
+                })
+            }
+        })
+        .map_err(|error| error.to_string())
     }
 }
 
 fn try_request_devices_info<'a>(
     env: &JNIEnv<'a>,
-    activity: JObject,
+    context: JObject,
     direction: AudioDeviceDirection,
 ) -> JResult<Vec<AudioDeviceInfo>> {
-    let audio_manager = get_system_service(env, activity, Context::AUDIO_SERVICE)?;
+    let audio_manager = get_system_service(env, context, Context::AUDIO_SERVICE)?;
 
     let devices = env.auto_local(get_devices(&env, audio_manager, direction as i32)?);
 

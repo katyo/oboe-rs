@@ -1,6 +1,6 @@
 use super::{
     utils::{
-        get_activity, get_property, get_system_service, with_attached, JNIEnv, JObject, JResult,
+        get_context, get_property, get_system_service, with_attached, JNIEnv, JObject, JResult,
     },
     AudioManager, Context,
 };
@@ -13,36 +13,47 @@ impl DefaultStreamValues {
      */
     #[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "java-interface")))]
     pub fn init() -> Result<(), String> {
-        let activity = get_activity();
-        let sdk_version = activity.sdk_version();
+        let activity = get_context();
 
-        if sdk_version < 17 {
-            Err("Unimplemented".into())
-        } else if sdk_version < 26 {
-            match with_attached(activity, try_request_default_stream_values) {
-                Ok((sample_rate, frames_per_burst)) => {
-                    if let Some(value) = sample_rate {
-                        Self::set_sample_rate(value);
-                    }
-                    if let Some(value) = frames_per_burst {
-                        Self::set_frames_per_burst(value);
-                    }
-                    Ok(())
-                }
-                Err(error) => Err(error.to_string()),
+        let values = with_attached(activity, |env, context| {
+            let sdk_version = env
+                .get_static_field("android/os/Build$VERSION", "SDK_INT", "I")?
+                .i()?;
+
+            if sdk_version < 17 {
+                Err(jni::errors::Error::MethodNotFound {
+                    name: "".into(),
+                    sig: "".into(),
+                })
+            } else if sdk_version < 26 {
+                try_request_default_stream_values(env, context).map(|vals| Some(vals))
+            } else {
+                // not necessary
+                Ok(None)
             }
-        } else {
-            // not necessary
-            Ok(())
+        });
+
+        match values {
+            Ok(Some((sample_rate, frames_per_burst))) => {
+                if let Some(value) = sample_rate {
+                    Self::set_sample_rate(value);
+                }
+                if let Some(value) = frames_per_burst {
+                    Self::set_frames_per_burst(value);
+                }
+                Ok(())
+            }
+            Ok(None) => Ok(()),
+            Err(error) => Err(error.to_string()),
         }
     }
 }
 
 fn try_request_default_stream_values<'a>(
     env: &JNIEnv<'a>,
-    activity: JObject,
+    context: JObject,
 ) -> JResult<(Option<i32>, Option<i32>)> {
-    let audio_manager = get_system_service(env, activity, Context::AUDIO_SERVICE)?;
+    let audio_manager = get_system_service(env, context, Context::AUDIO_SERVICE)?;
 
     let sample_rate = get_property(
         env,

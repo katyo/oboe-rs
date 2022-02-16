@@ -1,3 +1,5 @@
+use jni::sys::jobject;
+use ndk_context::AndroidContext;
 use std::sync::Arc;
 
 pub use jni::Executor;
@@ -11,17 +13,17 @@ pub use jni::{
     JNIEnv, JavaVM,
 };
 
-pub fn get_activity() -> &'static NativeActivity {
-    ndk_glue::native_activity()
+pub fn get_context() -> AndroidContext {
+    ndk_context::android_context()
 }
 
-pub fn with_attached<F, R>(activity: &NativeActivity, closure: F) -> JResult<R>
+pub fn with_attached<F, R>(context: AndroidContext, closure: F) -> JResult<R>
 where
     F: FnOnce(&JNIEnv, JObject) -> JResult<R>,
 {
-    let vm = Arc::new(unsafe { JavaVM::from_raw(activity.vm())? });
-    let activity = activity.activity();
-    Executor::new(vm).with_attached(|env| closure(env, activity.into()))
+    let vm = Arc::new(unsafe { JavaVM::from_raw(context.vm().cast())? });
+    let context = context.context() as jobject;
+    Executor::new(vm).with_attached(|env| closure(env, context.into()))
 }
 
 pub fn call_method_no_args_ret_int_array<'a>(

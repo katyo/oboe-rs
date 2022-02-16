@@ -26,8 +26,8 @@ path = "sys"
 version = "0.6"
 optional = true
 
-[dependencies.ndk-glue]
-version = "0.6"
+[dependencies.ndk-context]
+version = "0.1"
 optional = true
 
 [dependencies.jni]
@@ -39,7 +39,7 @@ shared-link = ["oboe-sys/shared-link"]
 shared-stdcxx = ["oboe-sys/shared-stdcxx"]
 generate-bindings = ["oboe-sys/generate-bindings"]
 fetch-prebuilt = ["oboe-sys/fetch-prebuilt"]
-java-interface = ["ndk", "ndk-glue", "jni"]
+java-interface = ["ndk", "ndk-context", "jni"]
 doc-cfg = []
 
 [package.metadata.docs.rs]
