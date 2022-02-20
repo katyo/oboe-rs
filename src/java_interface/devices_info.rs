@@ -45,7 +45,7 @@ fn try_request_devices_info<'a>(
 ) -> JResult<Vec<AudioDeviceInfo>> {
     let audio_manager = get_system_service(env, context, Context::AUDIO_SERVICE)?;
 
-    let devices = env.auto_local(get_devices(&env, audio_manager, direction as i32)?);
+    let devices = env.auto_local(get_devices(env, audio_manager, direction as i32)?);
 
     let raw_devices = devices.as_obj().into_inner();
 
@@ -57,31 +57,22 @@ fn try_request_devices_info<'a>(
             let device = env.get_object_array_element(raw_devices, index)?;
 
             Ok(AudioDeviceInfo {
-                id: call_method_no_args_ret_int(&env, device, "getId")?,
-                address: call_method_no_args_ret_string(&env, device, "getAddress")?,
-                product_name: call_method_no_args_ret_char_sequence(
-                    &env,
-                    device,
-                    "getProductName",
-                )?,
+                id: call_method_no_args_ret_int(env, device, "getId")?,
+                address: call_method_no_args_ret_string(env, device, "getAddress")?,
+                product_name: call_method_no_args_ret_char_sequence(env, device, "getProductName")?,
                 device_type: FromPrimitive::from_i32(call_method_no_args_ret_int(
-                    &env, device, "getType",
+                    env, device, "getType",
                 )?)
                 .unwrap(),
                 direction: AudioDeviceDirection::new(
-                    call_method_no_args_ret_bool(&env, device, "isSource")?,
-                    call_method_no_args_ret_bool(&env, device, "isSink")?,
+                    call_method_no_args_ret_bool(env, device, "isSource")?,
+                    call_method_no_args_ret_bool(env, device, "isSink")?,
                 ),
-                channel_counts: call_method_no_args_ret_int_array(
-                    &env,
-                    device,
-                    "getChannelCounts",
-                )?,
-                sample_rates: call_method_no_args_ret_int_array(&env, device, "getSampleRates")?,
-                formats: call_method_no_args_ret_int_array(&env, device, "getEncodings")?
+                channel_counts: call_method_no_args_ret_int_array(env, device, "getChannelCounts")?,
+                sample_rates: call_method_no_args_ret_int_array(env, device, "getSampleRates")?,
+                formats: call_method_no_args_ret_int_array(env, device, "getEncodings")?
                     .into_iter()
-                    .map(AudioFormat::from_encoding)
-                    .flatten()
+                    .filter_map(AudioFormat::from_encoding)
                     .collect::<Vec<_>>(),
             })
         })

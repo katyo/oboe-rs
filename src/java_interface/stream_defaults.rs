@@ -26,7 +26,7 @@ impl DefaultStreamValues {
                     sig: "".into(),
                 })
             } else if sdk_version < 26 {
-                try_request_default_stream_values(env, context).map(|vals| Some(vals))
+                try_request_default_stream_values(env, context).map(Some)
             } else {
                 // not necessary
                 Ok(None)
