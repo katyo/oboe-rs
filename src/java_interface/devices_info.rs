@@ -9,7 +9,7 @@ use super::{
         call_method_no_args_ret_string, get_context, get_devices, get_system_service,
         with_attached, JNIEnv, JObject, JResult,
     },
-    AudioDeviceDirection, AudioDeviceInfo, Context,
+    AudioDeviceDirection, AudioDeviceInfo, AudioDeviceType, Context,
 };
 
 impl AudioDeviceInfo {
@@ -63,7 +63,7 @@ fn try_request_devices_info<'a>(
                 device_type: FromPrimitive::from_i32(call_method_no_args_ret_int(
                     env, device, "getType",
                 )?)
-                .unwrap(),
+                .unwrap_or(AudioDeviceType::Unsupported),
                 direction: AudioDeviceDirection::new(
                     call_method_no_args_ret_bool(env, device, "isSource")?,
                     call_method_no_args_ret_bool(env, device, "isSink")?,

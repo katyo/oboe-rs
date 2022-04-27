@@ -116,6 +116,7 @@ pub enum AudioDeviceType {
     UsbHeadset = 22,
     WiredHeadphones = 4,
     WiredHeadset = 3,
+    Unsupported = -1,
 }
 
 /**
