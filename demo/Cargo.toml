@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies.oboe]
 path = ".."
-version = "0.4.5"
+version = "0.4.6"
 #features = ["generate-bindings"]
 features = ["java-interface"]
 #features = ["generate-bindings", "java-interface"]
@@ -26,7 +26,7 @@ version = "0.6.0"
 features = ["logger"]
 
 [dependencies.android_logger]
-version = "0.8"
+version = "0.10"
 
 [dependencies.log]
 version = "0.4"
