@@ -1,9 +1,10 @@
 use num_traits::FromPrimitive;
 use oboe_sys as ffi;
 use std::{
+    ffi::c_void,
     fmt,
     marker::PhantomData,
-    mem::MaybeUninit,
+    mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut},
 };
 
@@ -49,8 +50,17 @@ impl DerefMut for AudioStreamBuilderHandle {
  */
 #[repr(transparent)]
 pub struct AudioStreamBuilder<D, C, T> {
-    raw: AudioStreamBuilderHandle,
+    raw: ManuallyDrop<AudioStreamBuilderHandle>,
     _phantom: PhantomData<(D, C, T)>,
+}
+
+impl<D, C, T> Drop for AudioStreamBuilder<D, C, T> {
+    fn drop(&mut self) {
+        // SAFETY: self.raw is only drop here, or taken in Self::destructs, which don't drop self.
+        unsafe {
+            ManuallyDrop::drop(&mut self.raw);
+        }
+    }
 }
 
 impl<D, C, T> fmt::Debug for AudioStreamBuilder<D, C, T> {
@@ -81,16 +91,10 @@ impl Default for AudioStreamBuilder<Output, Unspecified, Unspecified> {
     }
 }
 
-impl<D, C, T> From<AudioStreamBuilder<D, C, T>> for AudioStreamBuilderHandle {
-    fn from(builder: AudioStreamBuilder<D, C, T>) -> Self {
-        builder.raw
-    }
-}
-
 impl<D, C, T> AudioStreamBuilder<D, C, T> {
     fn convert<D1, C1, T1>(self) -> AudioStreamBuilder<D1, C1, T1> {
         AudioStreamBuilder {
-            raw: self.into(),
+            raw: ManuallyDrop::new(self.destructs()),
             _phantom: PhantomData,
         }
     }
@@ -222,7 +226,7 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * returns true. Otherwise __OpenSL ES__ will be used.
      */
     pub fn get_audio_api(&self) -> AudioApi {
-        FromPrimitive::from_i32(unsafe { ffi::oboe_AudioStreamBuilder_getAudioApi(&*self.raw) })
+        FromPrimitive::from_i32(unsafe { ffi::oboe_AudioStreamBuilder_getAudioApi(&**self.raw) })
             .unwrap()
     }
 
@@ -237,7 +241,7 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
      * If the caller requests AAudio and it is supported then AAudio will be used.
      */
     pub fn set_audio_api(mut self, audio_api: AudioApi) -> Self {
-        unsafe { ffi::oboe_AudioStreamBuilder_setAudioApi(&mut *self.raw, audio_api as i32) }
+        unsafe { ffi::oboe_AudioStreamBuilder_setAudioApi(&mut **self.raw, audio_api as i32) }
         self
     }
 
@@ -444,6 +448,16 @@ impl<D, C, T> AudioStreamBuilder<D, C, T> {
         (audio_api == AudioApi::AAudio && Self::is_aaudio_supported())
             || (audio_api == AudioApi::Unspecified && Self::is_aaudio_recommended())
     }
+
+    /// Descontructs self into its handle, without calling drop.
+    fn destructs(mut self) -> AudioStreamBuilderHandle {
+        // Safety: the std::mem::forget prevents `raw` from being dropped by Self::drop.
+        let raw = unsafe { ManuallyDrop::take(&mut self.raw) };
+
+        std::mem::forget(self);
+
+        raw
+    }
 }
 
 impl<D: IsDirection, C: IsChannelCount, T: IsFormat> AudioStreamBuilder<D, C, T> {
@@ -452,12 +466,23 @@ impl<D: IsDirection, C: IsChannelCount, T: IsFormat> AudioStreamBuilder<D, C, T>
      */
     pub fn open_stream(self) -> Result<AudioStreamSync<D, (T, C)>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
-        let Self { mut raw, .. } = self;
+        let mut shared_ptr = MaybeUninit::<*mut c_void>::uninit();
+        let mut raw = self.destructs();
 
-        wrap_status(unsafe {
-            ffi::oboe_AudioStreamBuilder_openStream(&mut *raw, stream.as_mut_ptr())
+        let stream = wrap_status(unsafe {
+            ffi::oboe_AudioStreamBuilder_openStreamShared(
+                &mut *raw,
+                stream.as_mut_ptr(),
+                shared_ptr.as_mut_ptr(),
+            )
         })
-        .map(|_| AudioStreamSync::wrap_raw(unsafe { stream.assume_init() }))
+        .map(|_| unsafe {
+            AudioStreamSync::wrap_raw(stream.assume_init(), shared_ptr.assume_init())
+        });
+
+        drop(raw);
+
+        stream
     }
 }
 
@@ -486,13 +511,13 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Input, C, T> {
         (T, C): IsFrameType,
     {
         let mut callback = AudioCallbackWrapper::<Input, F>::wrap(stream_callback);
-        let Self { mut raw, .. } = self;
+        let mut raw = self.destructs();
         unsafe {
             ffi::oboe_AudioStreamBuilder_setCallback(&mut *raw, callback.raw_callback());
         }
         AudioStreamBuilderAsync {
-            raw,
-            callback,
+            raw: ManuallyDrop::new(raw),
+            callback: ManuallyDrop::new(callback),
             _phantom: PhantomData,
         }
     }
@@ -523,13 +548,13 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
         (T, C): IsFrameType,
     {
         let mut callback = AudioCallbackWrapper::<Output, F>::wrap(stream_callback);
-        let Self { mut raw, .. } = self;
+        let mut raw = self.destructs();
         unsafe {
             ffi::oboe_AudioStreamBuilder_setCallback(&mut *raw, callback.raw_callback());
         }
         AudioStreamBuilderAsync {
-            raw,
-            callback,
+            raw: ManuallyDrop::new(raw),
+            callback: ManuallyDrop::new(callback),
             _phantom: PhantomData,
         }
     }
@@ -539,9 +564,23 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
  * Factory for an audio stream.
  */
 pub struct AudioStreamBuilderAsync<D, F> {
-    raw: AudioStreamBuilderHandle,
-    callback: AudioCallbackWrapper<D, F>,
+    raw: ManuallyDrop<AudioStreamBuilderHandle>,
+    callback: ManuallyDrop<AudioCallbackWrapper<D, F>>,
     _phantom: PhantomData<(D, F)>,
+}
+
+impl<D, F> Drop for AudioStreamBuilderAsync<D, F> {
+    fn drop(&mut self) {
+        // SAFETY: the stream has not yet been open (Self::drop is not called after open_stream),
+        // so there is no data thread or error thread using this callback yet.
+        unsafe {
+            self.callback.delete();
+        }
+        // SAFETY: self.raw is only drop here, or taken in Self::destructs, which don't drop self.
+        unsafe {
+            ManuallyDrop::drop(&mut self.raw);
+        }
+    }
 }
 
 impl<D, F> fmt::Debug for AudioStreamBuilderAsync<D, F> {
@@ -560,20 +599,43 @@ impl<D, F> RawAudioStreamBase for AudioStreamBuilderAsync<D, F> {
     }
 }
 
+impl<D, F> AudioStreamBuilderAsync<D, F> {
+    /// Descontructs self into its handle and audio callback, without calling drop.
+    fn destructs(mut self) -> (AudioStreamBuilderHandle, AudioCallbackWrapper<D, F>) {
+        // Safety: the std::mem::forget prevents `raw` and `callback` from being dropped by
+        // Self::drop.
+        let raw = unsafe { ManuallyDrop::take(&mut self.raw) };
+        let callback = unsafe { ManuallyDrop::take(&mut self.callback) };
+
+        std::mem::forget(self);
+
+        (raw, callback)
+    }
+}
+
 impl<F: AudioInputCallback + Send> AudioStreamBuilderAsync<Input, F> {
     /**
      * Create and open an asynchronous (callback-driven) input stream based on the current settings.
      */
     pub fn open_stream(self) -> Result<AudioStreamAsync<Input, F>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
-        let Self {
-            mut raw, callback, ..
-        } = self;
+        let mut shared_ptr = MaybeUninit::<*mut c_void>::uninit();
+        let (mut raw, callback) = self.destructs();
 
-        wrap_status(unsafe {
-            ffi::oboe_AudioStreamBuilder_openStream(&mut *raw, stream.as_mut_ptr())
+        let stream = wrap_status(unsafe {
+            ffi::oboe_AudioStreamBuilder_openStreamShared(
+                &mut *raw,
+                stream.as_mut_ptr(),
+                shared_ptr.as_mut_ptr(),
+            )
         })
-        .map(|_| AudioStreamAsync::wrap_raw(unsafe { stream.assume_init() }, callback))
+        .map(|_| unsafe {
+            AudioStreamAsync::wrap_raw(stream.assume_init(), shared_ptr.assume_init(), callback)
+        });
+
+        drop(raw);
+
+        stream
     }
 }
 
@@ -583,13 +645,22 @@ impl<F: AudioOutputCallback + Send> AudioStreamBuilderAsync<Output, F> {
      */
     pub fn open_stream(self) -> Result<AudioStreamAsync<Output, F>> {
         let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
-        let Self {
-            mut raw, callback, ..
-        } = self;
+        let mut shared_ptr = MaybeUninit::<*mut c_void>::uninit();
+        let (mut raw, callback) = self.destructs();
 
-        wrap_status(unsafe {
-            ffi::oboe_AudioStreamBuilder_openStream(&mut *raw, stream.as_mut_ptr())
+        let stream = wrap_status(unsafe {
+            ffi::oboe_AudioStreamBuilder_openStreamShared(
+                &mut *raw,
+                stream.as_mut_ptr(),
+                shared_ptr.as_mut_ptr(),
+            )
         })
-        .map(|_| AudioStreamAsync::wrap_raw(unsafe { stream.assume_init() }, callback))
+        .map(|_| unsafe {
+            AudioStreamAsync::wrap_raw(stream.assume_init(), shared_ptr.assume_init(), callback)
+        });
+
+        drop(raw);
+
+        stream
     }
 }

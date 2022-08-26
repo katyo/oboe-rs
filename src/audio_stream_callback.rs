@@ -1,6 +1,7 @@
 use std::{
     ffi::c_void,
     marker::PhantomData,
+    mem::ManuallyDrop,
     ops::{Deref, DerefMut},
     slice::{from_raw_parts, from_raw_parts_mut},
 };
@@ -221,11 +222,10 @@ impl AudioStreamCallbackWrapperHandle {
             ffi::oboe_AudioStreamCallbackWrapper_new(audio_ready, before_close, after_close)
         })
     }
-}
 
-impl Drop for AudioStreamCallbackWrapperHandle {
-    fn drop(&mut self) {
-        unsafe { ffi::oboe_AudioStreamCallbackWrapper_delete(self.0) }
+    /// SAFFETY: `self.0` must be a valid pointer.
+    pub(crate) unsafe fn delete(&mut self) {
+        ffi::oboe_AudioStreamCallbackWrapper_delete(self.0)
     }
 }
 
@@ -245,13 +245,22 @@ impl DerefMut for AudioStreamCallbackWrapperHandle {
 
 pub(crate) struct AudioCallbackWrapper<D, T> {
     raw: AudioStreamCallbackWrapperHandle,
-    callback: Box<T>,
+    callback: ManuallyDrop<Box<T>>,
     _phantom: PhantomData<D>,
 }
 
 impl<D, T> AudioCallbackWrapper<D, T> {
     pub(crate) fn raw_callback(&mut self) -> &mut ffi::oboe_AudioStreamCallbackWrapper {
         &mut *self.raw
+    }
+
+    /// SAFETY: `self.raw` and `self.callback` should be valid. Calling this twice results in a
+    /// double free. The AudioStream that owns this callback must not have being open. If the
+    /// AudioStream was open, there is currently no safe way of calling this function.
+    /// (see https://github.com/google/oboe/issues/1610)
+    pub(crate) unsafe fn delete(&mut self) {
+        self.raw.delete();
+        ManuallyDrop::drop(&mut self.callback);
     }
 }
 
@@ -267,11 +276,11 @@ where
                 Some(on_error_before_close_input_wrapper::<T>),
                 Some(on_error_after_close_input_wrapper::<T>),
             ),
-            callback,
+            callback: ManuallyDrop::new(callback),
             _phantom: PhantomData,
         };
         unsafe {
-            (*wrapper.raw).setContext(&mut (*wrapper.callback) as *mut _ as *mut c_void);
+            (*wrapper.raw).setContext(&mut (**wrapper.callback) as *mut T as *mut c_void);
         }
         wrapper
     }
@@ -289,11 +298,11 @@ where
                 Some(on_error_before_close_output_wrapper::<T>),
                 Some(on_error_after_close_output_wrapper::<T>),
             ),
-            callback,
+            callback: ManuallyDrop::new(callback),
             _phantom: PhantomData,
         };
         unsafe {
-            (*wrapper.raw).setContext(&mut (*wrapper.callback) as *mut _ as *mut c_void);
+            (*wrapper.raw).setContext(&mut (**wrapper.callback) as *mut T as *mut c_void);
         }
         wrapper
     }

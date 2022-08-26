@@ -1,12 +1,17 @@
 #include "oboe/OboeExt.h"
 
 namespace oboe {
-  void AudioStream_delete(AudioStream *oboeStream) {
-    delete oboeStream;
+  void AudioStream_deleteShared(void *shared_ptr) {
+    std::shared_ptr<AudioStream> *s = (std::shared_ptr<AudioStream> *)shared_ptr;
+    delete s;
   }
 
   Result AudioStream_open(AudioStream *oboeStream) {
     return oboeStream->open();
+  }
+
+  Result AudioStream_close(AudioStream *oboeStream) {
+    return oboeStream->close();
   }
 
   Result AudioStream_requestStart(AudioStream *oboeStream) {

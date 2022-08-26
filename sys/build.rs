@@ -164,6 +164,7 @@ impl Builder {
             .allowlist_function("oboe::getSdkVersion")
             .blocklist_type("std::.*_ptr.*")
             .blocklist_type("oboe::ManagedStream")
+            .blocklist_function("oboe::AudioStreamBuilder_openStream")
             .blocklist_function("oboe::AudioStreamBuilder_openStream1")
             .blocklist_function("oboe::AudioStreamBuilder_openManagedStream")
             .blocklist_function("oboe::AudioStreamBuilder_setPackageName")
