@@ -59,9 +59,14 @@ namespace oboe {
   AudioApi AudioStreamBuilder_getAudioApi(const AudioStreamBuilder *builder);
   void AudioStreamBuilder_setAudioApi(AudioStreamBuilder *builder, AudioApi api);
   AudioStreamBase* AudioStreamBuilder_getBase(AudioStreamBuilder *builder);
-
+  Result AudioStreamBuilder_openStreamShared(AudioStreamBuilder *builder,
+                                             AudioStream **stream,
+                                             void **shared_ptr);
+  
   void AudioStream_delete(AudioStream *oboeStream);
+  void AudioStream_deleteShared(void *shared_ptr);
   Result AudioStream_open(AudioStream *oboeStream);
+  Result AudioStream_close(AudioStream *oboeStream);
   Result AudioStream_requestStart(AudioStream *oboeStream);
   Result AudioStream_requestPause(AudioStream *oboeStream);
   Result AudioStream_requestFlush(AudioStream *oboeStream);

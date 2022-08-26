@@ -33,4 +33,14 @@ namespace oboe {
   AudioStreamBase* AudioStreamBuilder_getBase(AudioStreamBuilder *builder) {
     return static_cast<AudioStreamBase*>(builder);
   }
+
+  Result AudioStreamBuilder_openStreamShared(AudioStreamBuilder *builder,
+                                             AudioStream **stream,
+                                             void **shared_ptr) {
+    std::shared_ptr<AudioStream> *s = new std::shared_ptr<AudioStream>();
+    Result res = builder->openStream(*s);
+    *stream = s->get();
+    *shared_ptr = (void *)s;
+    return res;
+  }
 }
