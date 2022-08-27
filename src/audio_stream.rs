@@ -657,7 +657,7 @@ impl<D, F> Drop for AudioStreamAsync<D, F> {
         // SAFETY: As long as the conditions on Self::wrap_raw are guaranteed on the creation of
         // self, this is safe.
         unsafe {
-            self.close();
+            let _ = self.close();
             self.raw.delete();
 
             // NOTE: Currently there is no safe way to delete the AudioStreamCallback, so we are
@@ -726,7 +726,7 @@ impl<D, F> Drop for AudioStreamSync<D, F> {
         // SAFETY: As long as the conditions on Self::wrap_raw are guaranteed on the creation of
         // self, this is safe.
         unsafe {
-            self.close();
+            let _ = self.close();
             self.raw.delete();
         }
     }
