@@ -793,21 +793,6 @@ extern "C" {
     #[link_name = "\u{1}_ZN4oboe18AudioStreamBuilder19isAAudioRecommendedEv"]
     pub fn oboe_AudioStreamBuilder_isAAudioRecommended() -> bool;
 }
-extern "C" {
-    #[doc = " Create and open a stream object based on the current settings."]
-    #[doc = ""]
-    #[doc = " The caller owns the pointer to the AudioStream object"]
-    #[doc = " and must delete it when finished."]
-    #[doc = ""]
-    #[doc = " @deprecated Use openStream(std::shared_ptr<oboe::AudioStream> &stream) instead."]
-    #[doc = " @param stream pointer to a variable to receive the stream address"]
-    #[doc = " @return OBOE_OK if successful or a negative error code"]
-    #[link_name = "\u{1}_ZN4oboe18AudioStreamBuilder10openStreamEPPNS_11AudioStreamE"]
-    pub fn oboe_AudioStreamBuilder_openStream(
-        this: *mut oboe_AudioStreamBuilder,
-        stream: *mut *mut oboe_AudioStream,
-    ) -> oboe_Result;
-}
 impl oboe_AudioStreamBuilder {
     #[inline]
     pub unsafe fn isAAudioSupported() -> bool {
@@ -816,10 +801,6 @@ impl oboe_AudioStreamBuilder {
     #[inline]
     pub unsafe fn isAAudioRecommended() -> bool {
         oboe_AudioStreamBuilder_isAAudioRecommended()
-    }
-    #[inline]
-    pub unsafe fn openStream(&mut self, stream: *mut *mut oboe_AudioStream) -> oboe_Result {
-        oboe_AudioStreamBuilder_openStream(self, stream)
     }
 }
 #[doc = " Base class for Oboe C++ audio stream."]
@@ -1485,12 +1466,28 @@ extern "C" {
     ) -> *mut oboe_AudioStreamBase;
 }
 extern "C" {
+    #[link_name = "\u{1}_ZN4oboe35AudioStreamBuilder_openStreamSharedEPNS_18AudioStreamBuilderEPPNS_11AudioStreamEPPv"]
+    pub fn oboe_AudioStreamBuilder_openStreamShared(
+        builder: *mut oboe_AudioStreamBuilder,
+        stream: *mut *mut oboe_AudioStream,
+        shared_ptr: *mut *mut ::std::os::raw::c_void,
+    ) -> oboe_Result;
+}
+extern "C" {
     #[link_name = "\u{1}_ZN4oboe18AudioStream_deleteEPNS_11AudioStreamE"]
     pub fn oboe_AudioStream_delete(oboeStream: *mut oboe_AudioStream);
 }
 extern "C" {
+    #[link_name = "\u{1}_ZN4oboe24AudioStream_deleteSharedEPv"]
+    pub fn oboe_AudioStream_deleteShared(shared_ptr: *mut ::std::os::raw::c_void);
+}
+extern "C" {
     #[link_name = "\u{1}_ZN4oboe16AudioStream_openEPNS_11AudioStreamE"]
     pub fn oboe_AudioStream_open(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe17AudioStream_closeEPNS_11AudioStreamE"]
+    pub fn oboe_AudioStream_close1(oboeStream: *mut oboe_AudioStream) -> oboe_Result;
 }
 extern "C" {
     #[link_name = "\u{1}_ZN4oboe24AudioStream_requestStartEPNS_11AudioStreamE"]
