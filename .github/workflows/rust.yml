@@ -244,6 +244,10 @@ jobs:
           path: ~/.cargo/bin/cargo-apk
           key: ${{ runner.os }}-cargo-apk
       - uses: Swatinem/rust-cache@v1
+      - name: Create signing key
+        run: |
+          echo ${{ secrets.APK_SIGN_KEY_DATA }} | base64 -d > demo/release.keystore
+          sed -i 's/keystore_password = "android"/keystore_password = "${{ secrets.APK_SIGN_KEY_SECRET }}"/' demo/Cargo.toml
       - name: Build demo apk
         uses: actions-rs/cargo@v1
         with:

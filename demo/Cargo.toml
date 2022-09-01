@@ -32,7 +32,7 @@ version = "0.10"
 version = "0.4"
 
 [dependencies.glutin]
-version = "0.24"
+version = "0.28"
 
 [features]
 default = ["audio"]
@@ -75,3 +75,7 @@ name = "android.permission.WRITE_EXTERNAL_STORAGE"
 
 [[package.metadata.android.permission]]
 name = "android.permission.RECORD_AUDIO"
+
+[package.metadata.android.signing.release]
+path = "release.keystore"
+keystore_password = "android"
