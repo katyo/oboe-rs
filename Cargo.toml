@@ -23,7 +23,7 @@ version = "0.4.5"
 path = "sys"
 
 [dependencies.ndk]
-version = "0.6"
+version = "0.7"
 optional = true
 
 [dependencies.ndk-context]
@@ -64,7 +64,3 @@ codegen-units = 1
 panic = 'unwind'
 incremental = false
 overflow-checks = false
-
-[patch.crates-io]
-winit = { git = "https://github.com/rust-windowing/winit" }
-glutin = { git = "https://github.com/katyo/glutin", branch = "android-support" }
