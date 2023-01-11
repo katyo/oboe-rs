@@ -22,7 +22,7 @@ optional = true
 version = "0.1.0"
 
 [dependencies.ndk-glue]
-version = "0.6.0"
+version = "0.7.0"
 features = ["logger"]
 
 [dependencies.android_logger]
@@ -32,7 +32,7 @@ version = "0.10"
 version = "0.4"
 
 [dependencies.glutin]
-version = "0.28"
+version = "0.29"
 
 [features]
 default = ["audio"]
