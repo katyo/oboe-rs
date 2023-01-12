@@ -25,10 +25,25 @@ namespace oboe {
     builder->setAudioApi(api);
   }
 
-  void AudioStreamBuilder_setCallback(AudioStreamBuilder *builder,
-                                      AudioStreamCallbackWrapper *callback) {
-    builder->setDataCallback(callback);
-    builder->setErrorCallback(callback);
+  /// Returns a pointer to a shared_ptr<AudioStreamCallbackWrapper> that must be deleted with
+  /// AudioStreamCallbackWrapper_delete.
+  void* AudioStreamBuilder_setCallback(AudioStreamBuilder *builder,
+                                      void *context,
+                                      const DropContextHandler drop_context,
+                                      const AudioReadyHandler audio_ready,
+                                      const ErrorCloseHandler before_close,
+                                      const ErrorCloseHandler after_close) {
+    auto *s = new std::shared_ptr<AudioStreamCallbackWrapper>(
+            new AudioStreamCallbackWrapper(
+                context,
+                drop_context,
+                audio_ready,
+                before_close,
+                after_close));
+    builder->setDataCallback(*s);
+    builder->setErrorCallback(*s);
+
+    return (void*) s;
   }
 
   AudioStreamBase* AudioStreamBuilder_getBase(AudioStreamBuilder *builder) {
