@@ -35,19 +35,6 @@ namespace oboe {
     _after_close(_context, oboeStream, error);
   }
 
-  /*void AudioStreamCallbackWrapper_init(AudioStreamCallbackWrapper *callback,
-                                       const AudioReadyHandler audio_ready,
-                                       const ErrorCloseHandler before_close,
-                                       const ErrorCloseHandler after_close) {
-    new (callback) AudioStreamCallbackWrapper(audio_ready,
-                                              before_close,
-                                              after_close);
-  }
-
-  void AudioStreamCallbackWrapper_drop(AudioStreamCallbackWrapper *callback) {
-    callback->~AudioStreamCallbackWrapper();
-  }*/
-
   AudioStreamCallbackWrapper *
   AudioStreamCallbackWrapper_new(const AudioReadyHandler audio_ready,
                                  const ErrorCloseHandler before_close,
