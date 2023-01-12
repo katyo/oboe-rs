@@ -120,8 +120,11 @@ pub type oboe_PerformanceMode = i32;
 #[doc = " Try to use AAudio. If not available then use OpenSL ES."]
 pub const oboe_AudioApi_Unspecified: oboe_AudioApi = 0;
 #[doc = " Use OpenSL ES."]
+#[doc = " Note that OpenSL ES is deprecated in Android 13, API 30 and above."]
 pub const oboe_AudioApi_OpenSLES: oboe_AudioApi = 1;
 #[doc = " Try to use AAudio. Fail if unavailable."]
+#[doc = " AAudio was first supported in Android 8, API 26 and above."]
+#[doc = " It is only recommended for API 27 and above."]
 pub const oboe_AudioApi_AAudio: oboe_AudioApi = 2;
 #[doc = " The underlying audio API used by the audio stream."]
 pub type oboe_AudioApi = i32;
@@ -130,14 +133,11 @@ pub const oboe_SampleRateConversionQuality_None: oboe_SampleRateConversionQualit
 #[doc = " Fastest conversion but may not sound great."]
 #[doc = " This may be implemented using bilinear interpolation."]
 pub const oboe_SampleRateConversionQuality_Fastest: oboe_SampleRateConversionQuality = 1;
-#[doc = " Fastest conversion but may not sound great."]
-#[doc = " This may be implemented using bilinear interpolation."]
+#[doc = " Low quality conversion with 8 taps."]
 pub const oboe_SampleRateConversionQuality_Low: oboe_SampleRateConversionQuality = 2;
-#[doc = " Fastest conversion but may not sound great."]
-#[doc = " This may be implemented using bilinear interpolation."]
+#[doc = " Medium quality conversion with 16 taps."]
 pub const oboe_SampleRateConversionQuality_Medium: oboe_SampleRateConversionQuality = 3;
-#[doc = " Fastest conversion but may not sound great."]
-#[doc = " This may be implemented using bilinear interpolation."]
+#[doc = " High quality conversion with 32 taps."]
 pub const oboe_SampleRateConversionQuality_High: oboe_SampleRateConversionQuality = 4;
 #[doc = " Highest quality conversion, which may be expensive in terms of CPU."]
 pub const oboe_SampleRateConversionQuality_Best: oboe_SampleRateConversionQuality = 5;
@@ -251,6 +251,66 @@ pub const oboe_ChannelCount_Stereo: oboe_ChannelCount = 2;
 #[doc = " rather than `builder.setChannelCount(2)`"]
 #[doc = ""]
 pub type oboe_ChannelCount = i32;
+pub const oboe_ChannelMask_Unspecified: oboe_ChannelMask = 0;
+pub const oboe_ChannelMask_FrontLeft: oboe_ChannelMask = 1;
+pub const oboe_ChannelMask_FrontRight: oboe_ChannelMask = 2;
+pub const oboe_ChannelMask_FrontCenter: oboe_ChannelMask = 4;
+pub const oboe_ChannelMask_LowFrequency: oboe_ChannelMask = 8;
+pub const oboe_ChannelMask_BackLeft: oboe_ChannelMask = 16;
+pub const oboe_ChannelMask_BackRight: oboe_ChannelMask = 32;
+pub const oboe_ChannelMask_FrontLeftOfCenter: oboe_ChannelMask = 64;
+pub const oboe_ChannelMask_FrontRightOfCenter: oboe_ChannelMask = 128;
+pub const oboe_ChannelMask_BackCenter: oboe_ChannelMask = 256;
+pub const oboe_ChannelMask_SideLeft: oboe_ChannelMask = 512;
+pub const oboe_ChannelMask_SideRight: oboe_ChannelMask = 1024;
+pub const oboe_ChannelMask_TopCenter: oboe_ChannelMask = 2048;
+pub const oboe_ChannelMask_TopFrontLeft: oboe_ChannelMask = 4096;
+pub const oboe_ChannelMask_TopFrontCenter: oboe_ChannelMask = 8192;
+pub const oboe_ChannelMask_TopFrontRight: oboe_ChannelMask = 16384;
+pub const oboe_ChannelMask_TopBackLeft: oboe_ChannelMask = 32768;
+pub const oboe_ChannelMask_TopBackCenter: oboe_ChannelMask = 65536;
+pub const oboe_ChannelMask_TopBackRight: oboe_ChannelMask = 131072;
+pub const oboe_ChannelMask_TopSideLeft: oboe_ChannelMask = 262144;
+pub const oboe_ChannelMask_TopSideRight: oboe_ChannelMask = 524288;
+pub const oboe_ChannelMask_BottomFrontLeft: oboe_ChannelMask = 1048576;
+pub const oboe_ChannelMask_BottomFrontCenter: oboe_ChannelMask = 2097152;
+pub const oboe_ChannelMask_BottomFrontRight: oboe_ChannelMask = 4194304;
+pub const oboe_ChannelMask_LowFrequency2: oboe_ChannelMask = 8388608;
+pub const oboe_ChannelMask_FrontWideLeft: oboe_ChannelMask = 16777216;
+pub const oboe_ChannelMask_FrontWideRight: oboe_ChannelMask = 33554432;
+pub const oboe_ChannelMask_Mono: oboe_ChannelMask = 1;
+pub const oboe_ChannelMask_Stereo: oboe_ChannelMask = 3;
+pub const oboe_ChannelMask_CM2Point1: oboe_ChannelMask = 11;
+pub const oboe_ChannelMask_Tri: oboe_ChannelMask = 7;
+pub const oboe_ChannelMask_TriBack: oboe_ChannelMask = 259;
+pub const oboe_ChannelMask_CM3Point1: oboe_ChannelMask = 15;
+pub const oboe_ChannelMask_CM2Point0Point2: oboe_ChannelMask = 786435;
+pub const oboe_ChannelMask_CM2Point1Point2: oboe_ChannelMask = 786443;
+pub const oboe_ChannelMask_CM3Point0Point2: oboe_ChannelMask = 786439;
+pub const oboe_ChannelMask_CM3Point1Point2: oboe_ChannelMask = 786447;
+pub const oboe_ChannelMask_Quad: oboe_ChannelMask = 51;
+pub const oboe_ChannelMask_QuadSide: oboe_ChannelMask = 1539;
+pub const oboe_ChannelMask_Surround: oboe_ChannelMask = 263;
+pub const oboe_ChannelMask_Penta: oboe_ChannelMask = 55;
+pub const oboe_ChannelMask_CM5Point1: oboe_ChannelMask = 63;
+pub const oboe_ChannelMask_CM5Point1Side: oboe_ChannelMask = 1551;
+pub const oboe_ChannelMask_CM6Point1: oboe_ChannelMask = 319;
+pub const oboe_ChannelMask_CM7Point1: oboe_ChannelMask = 1599;
+pub const oboe_ChannelMask_CM5Point1Point2: oboe_ChannelMask = 786495;
+pub const oboe_ChannelMask_CM5Point1Point4: oboe_ChannelMask = 184383;
+pub const oboe_ChannelMask_CM7Point1Point2: oboe_ChannelMask = 788031;
+pub const oboe_ChannelMask_CM7Point1Point4: oboe_ChannelMask = 185919;
+pub const oboe_ChannelMask_CM9Point1Point4: oboe_ChannelMask = 50517567;
+pub const oboe_ChannelMask_CM9Point1Point6: oboe_ChannelMask = 51303999;
+pub const oboe_ChannelMask_FrontBack: oboe_ChannelMask = 260;
+#[doc = " The channel mask of the audio stream. The underlying type is `uint32_t`."]
+#[doc = " Use of this enum is convenient."]
+#[doc = ""]
+#[doc = " ChannelMask::Unspecified means this is not specified."]
+#[doc = " The rest of the enums are channel position masks."]
+#[doc = " Use the combinations of the channel position masks defined below instead of"]
+#[doc = " using those values directly."]
+pub type oboe_ChannelMask = u32;
 #[doc = " On API 16 to 26 OpenSL ES will be used. When using OpenSL ES the optimal values for sampleRate and"]
 #[doc = " framesPerBurst are not known by the native code."]
 #[doc = " On API 17+ these values should be obtained from the AudioManager using this code:"]
@@ -410,6 +470,10 @@ pub struct oboe_AudioStreamErrorCallback__bindgen_vtable(::std::os::raw::c_void)
 #[doc = " being alerted when a stream has an error or is disconnected"]
 #[doc = " using `onError*` methods."]
 #[doc = ""]
+#[doc = " Note: This callback is only fired when an AudioStreamCallback is set."]
+#[doc = " If you use AudioStream::write() you have to evaluate the return codes of"]
+#[doc = " AudioStream::write() to notice errors in the stream."]
+#[doc = ""]
 #[doc = " It is used with AudioStreamBuilder::setErrorCallback()."]
 #[repr(C)]
 #[derive(Debug)]
@@ -464,13 +528,14 @@ fn bindgen_test_layout_oboe_AudioStreamCallback() {
 pub struct oboe_AudioStreamBase__bindgen_vtable(::std::os::raw::c_void);
 #[doc = " Base class containing parameters for audio streams and builders."]
 #[repr(C)]
-#[derive(Debug)]
 pub struct oboe_AudioStreamBase {
     pub vtable_: *const oboe_AudioStreamBase__bindgen_vtable,
     #[doc = " The callback which will be fired when new data is ready to be read/written."]
     pub mDataCallback: *mut oboe_AudioStreamDataCallback,
+    pub mSharedDataCallback: [u32; 2usize],
     #[doc = " The callback which will be fired when an error or a disconnect occurs."]
     pub mErrorCallback: *mut oboe_AudioStreamErrorCallback,
+    pub mSharedErrorCallback: [u32; 2usize],
     #[doc = " Number of audio frames which will be requested in each callback"]
     pub mFramesPerCallback: i32,
     #[doc = " Stream channel count"]
@@ -483,6 +548,8 @@ pub struct oboe_AudioStreamBase {
     pub mBufferCapacityInFrames: i32,
     #[doc = " Stream buffer size specified as a number of audio frames"]
     pub mBufferSizeInFrames: i32,
+    #[doc = " Stream channel mask. Only active on Android 32+"]
+    pub mChannelMask: oboe_ChannelMask,
     #[doc = " Stream sharing mode"]
     pub mSharingMode: oboe_SharingMode,
     #[doc = " Format of audio frames"]
@@ -512,7 +579,7 @@ pub struct oboe_AudioStreamBase {
 fn bindgen_test_layout_oboe_AudioStreamBase() {
     assert_eq!(
         ::std::mem::size_of::<oboe_AudioStreamBase>(),
-        100usize,
+        120usize,
         concat!("Size of: ", stringify!(oboe_AudioStreamBase))
     );
     assert_eq!(
@@ -537,6 +604,23 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
         );
     }
     test_field_mDataCallback();
+    fn test_field_mSharedDataCallback() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<oboe_AudioStreamBase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).mSharedDataCallback) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(oboe_AudioStreamBase),
+                "::",
+                stringify!(mSharedDataCallback)
+            )
+        );
+    }
+    test_field_mSharedDataCallback();
     fn test_field_mErrorCallback() {
         assert_eq!(
             unsafe {
@@ -544,7 +628,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mErrorCallback) as usize - ptr as usize
             },
-            8usize,
+            16usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -554,6 +638,23 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
         );
     }
     test_field_mErrorCallback();
+    fn test_field_mSharedErrorCallback() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<oboe_AudioStreamBase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).mSharedErrorCallback) as usize - ptr as usize
+            },
+            20usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(oboe_AudioStreamBase),
+                "::",
+                stringify!(mSharedErrorCallback)
+            )
+        );
+    }
+    test_field_mSharedErrorCallback();
     fn test_field_mFramesPerCallback() {
         assert_eq!(
             unsafe {
@@ -561,7 +662,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mFramesPerCallback) as usize - ptr as usize
             },
-            12usize,
+            28usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -578,7 +679,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mChannelCount) as usize - ptr as usize
             },
-            16usize,
+            32usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -595,7 +696,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mSampleRate) as usize - ptr as usize
             },
-            20usize,
+            36usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -612,7 +713,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mDeviceId) as usize - ptr as usize
             },
-            24usize,
+            40usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -629,7 +730,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mBufferCapacityInFrames) as usize - ptr as usize
             },
-            28usize,
+            44usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -646,7 +747,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mBufferSizeInFrames) as usize - ptr as usize
             },
-            32usize,
+            48usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -656,6 +757,23 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
         );
     }
     test_field_mBufferSizeInFrames();
+    fn test_field_mChannelMask() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<oboe_AudioStreamBase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).mChannelMask) as usize - ptr as usize
+            },
+            52usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(oboe_AudioStreamBase),
+                "::",
+                stringify!(mChannelMask)
+            )
+        );
+    }
+    test_field_mChannelMask();
     fn test_field_mSharingMode() {
         assert_eq!(
             unsafe {
@@ -663,7 +781,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mSharingMode) as usize - ptr as usize
             },
-            36usize,
+            56usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -680,7 +798,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mFormat) as usize - ptr as usize
             },
-            40usize,
+            60usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -697,7 +815,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mDirection) as usize - ptr as usize
             },
-            44usize,
+            64usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -714,7 +832,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mPerformanceMode) as usize - ptr as usize
             },
-            48usize,
+            68usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -731,7 +849,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mUsage) as usize - ptr as usize
             },
-            52usize,
+            72usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -748,7 +866,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mContentType) as usize - ptr as usize
             },
-            56usize,
+            76usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -765,7 +883,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mInputPreset) as usize - ptr as usize
             },
-            60usize,
+            80usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -782,7 +900,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mSessionId) as usize - ptr as usize
             },
-            64usize,
+            84usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -799,7 +917,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mPackageName) as usize - ptr as usize
             },
-            68usize,
+            88usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -816,7 +934,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mAttributionTag) as usize - ptr as usize
             },
-            80usize,
+            100usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -833,7 +951,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mChannelConversionAllowed) as usize - ptr as usize
             },
-            92usize,
+            112usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -850,7 +968,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mFormatConversionAllowed) as usize - ptr as usize
             },
-            93usize,
+            113usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -867,7 +985,7 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
                 let ptr = uninit.as_ptr();
                 ::std::ptr::addr_of!((*ptr).mSampleRateConversionQuality) as usize - ptr as usize
             },
-            96usize,
+            116usize,
             concat!(
                 "Offset of field: ",
                 stringify!(oboe_AudioStreamBase),
@@ -878,18 +996,28 @@ fn bindgen_test_layout_oboe_AudioStreamBase() {
     }
     test_field_mSampleRateConversionQuality();
 }
+extern "C" {
+    #[doc = " Return the version of the SDK that is currently running."]
+    #[doc = ""]
+    #[doc = " For example, on Android, this would return 27 for Oreo 8.1."]
+    #[doc = " If the version number cannot be determined then this will return -1."]
+    #[doc = ""]
+    #[doc = " @return version number or -1"]
+    #[link_name = "\u{1}_ZN4oboe13getSdkVersionEv"]
+    pub fn oboe_getSdkVersion() -> ::std::os::raw::c_int;
+}
 #[doc = " Factory class for an audio Stream."]
 #[repr(C)]
 #[repr(align(4))]
 #[derive(Debug, Copy, Clone)]
 pub struct oboe_AudioStreamBuilder {
-    pub _bindgen_opaque_blob: [u32; 26usize],
+    pub _bindgen_opaque_blob: [u32; 31usize],
 }
 #[test]
 fn bindgen_test_layout_oboe_AudioStreamBuilder() {
     assert_eq!(
         ::std::mem::size_of::<oboe_AudioStreamBuilder>(),
-        104usize,
+        124usize,
         concat!("Size of: ", stringify!(oboe_AudioStreamBuilder))
     );
     assert_eq!(
@@ -932,13 +1060,13 @@ impl oboe_AudioStreamBuilder {
 #[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
 pub struct oboe_AudioStream {
-    pub _bindgen_opaque_blob: [u64; 19usize],
+    pub _bindgen_opaque_blob: [u64; 21usize],
 }
 #[test]
 fn bindgen_test_layout_oboe_AudioStream() {
     assert_eq!(
         ::std::mem::size_of::<oboe_AudioStream>(),
-        152usize,
+        168usize,
         concat!("Size of: ", stringify!(oboe_AudioStream))
     );
     assert_eq!(
@@ -992,6 +1120,12 @@ extern "C" {
     ) -> oboe_DataCallbackResult;
 }
 extern "C" {
+    #[doc = " This should only be called as a stream is being opened."]
+    #[doc = " Otherwise we might override setDelayBeforeCloseMillis()."]
+    #[link_name = "\u{1}_ZN4oboe11AudioStream38calculateDefaultDelayBeforeCloseMillisEv"]
+    pub fn oboe_AudioStream_calculateDefaultDelayBeforeCloseMillis(this: *mut oboe_AudioStream);
+}
+extern "C" {
     #[doc = " Construct an `AudioStream` using the given `AudioStreamBuilder`"]
     #[doc = ""]
     #[doc = " @param builder containing all the stream's attributes"]
@@ -1025,6 +1159,10 @@ impl oboe_AudioStream {
         numFrames: ::std::os::raw::c_int,
     ) -> oboe_DataCallbackResult {
         oboe_AudioStream_fireDataCallback(self, audioData, numFrames)
+    }
+    #[inline]
+    pub unsafe fn calculateDefaultDelayBeforeCloseMillis(&mut self) {
+        oboe_AudioStream_calculateDefaultDelayBeforeCloseMillis(self)
     }
     #[inline]
     pub unsafe fn new(builder: *const oboe_AudioStreamBuilder) -> Self {
@@ -1101,6 +1239,11 @@ extern "C" {
     #[doc = " The time is based on the implementation's best effort, using whatever knowledge is available"]
     #[doc = " to the system, but cannot account for any delay unknown to the implementation."]
     #[doc = ""]
+    #[doc = " Note that due to issues in Android before R, we recommend NOT calling"]
+    #[doc = " this method from a data callback. See this tech note for more details."]
+    #[doc = " https://github.com/google/oboe/blob/main/docs/notes/rlsbuffer.md"]
+    #[doc = ""]
+    #[doc = " See"]
     #[doc = " @param clockId the type of clock to use e.g. CLOCK_MONOTONIC"]
     #[doc = " @return a FrameTimestamp containing the position and time at which a particular audio frame"]
     #[doc = " entered or left the audio processing pipeline, or an error if the operation failed."]
@@ -1123,6 +1266,7 @@ extern "C" {
         timeoutNanoseconds: i64,
     ) -> oboe_Result;
 }
+pub const oboe_AudioStream_kMinDelayBeforeCloseMillis: ::std::os::raw::c_int = 10;
 #[doc = " This struct is a stateless functor which closes an AudioStream prior to its deletion."]
 #[doc = " This means it can be used to safely delete a smart pointer referring to an open stream."]
 #[repr(C)]
@@ -1256,16 +1400,6 @@ impl oboe_LatencyTuner {
 }
 pub const oboe_LatencyTuner_kIdleCount: i32 = 8;
 pub const oboe_LatencyTuner_kDefaultNumBursts: i32 = 2;
-extern "C" {
-    #[doc = " Return the version of the SDK that is currently running."]
-    #[doc = ""]
-    #[doc = " For example, on Android, this would return 27 for Oreo 8.1."]
-    #[doc = " If the version number cannot be determined then this will return -1."]
-    #[doc = ""]
-    #[doc = " @return version number or -1"]
-    #[link_name = "\u{1}_ZN4oboe13getSdkVersionEv"]
-    pub fn oboe_getSdkVersion() -> ::std::os::raw::c_int;
-}
 #[doc = " Oboe versioning object"]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1276,15 +1410,15 @@ pub struct oboe_Version {
 pub const oboe_Version_Major: u8 = 1;
 #[doc = " This is incremented when we add backwards compatible functionality. Or set to zero when MAJOR is"]
 #[doc = " incremented."]
-pub const oboe_Version_Minor: u8 = 6;
+pub const oboe_Version_Minor: u8 = 7;
 #[doc = " This is incremented when we make backwards compatible bug fixes. Or set to zero when MINOR is"]
 #[doc = " incremented."]
-pub const oboe_Version_Patch: u16 = 1;
+pub const oboe_Version_Patch: u16 = 0;
 #[doc = " Version string in the form MAJOR.MINOR.PATCH."]
-pub const oboe_Version_Text: &[u8; 6usize] = b"1.6.1\0";
+pub const oboe_Version_Text: &[u8; 6usize] = b"1.7.0\0";
 #[doc = " Integer representation of the current Oboe library version. This will always increase when the"]
 #[doc = " version number changes so can be compared using integer comparison."]
-pub const oboe_Version_Number: u32 = 17170433;
+pub const oboe_Version_Number: u32 = 17235968;
 #[test]
 fn bindgen_test_layout_oboe_Version() {
     assert_eq!(
