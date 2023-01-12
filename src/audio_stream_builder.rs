@@ -17,7 +17,7 @@ use super::{
 };
 
 #[repr(transparent)]
-struct AudioStreamBuilderHandle(*mut ffi::oboe_AudioStreamBuilder);
+pub(crate) struct AudioStreamBuilderHandle(*mut ffi::oboe_AudioStreamBuilder);
 
 impl Default for AudioStreamBuilderHandle {
     fn default() -> Self {
@@ -510,11 +510,8 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Input, C, T> {
         F: AudioInputCallback<FrameType = (T, C)>,
         (T, C): IsFrameType,
     {
-        let mut callback = AudioCallbackWrapper::<Input, F>::wrap(stream_callback);
         let mut raw = self.destructs();
-        unsafe {
-            ffi::oboe_AudioStreamBuilder_setCallback(&mut *raw, callback.raw_callback());
-        }
+        let callback = AudioCallbackWrapper::<Input, F>::set_callback(&mut raw, stream_callback);
         AudioStreamBuilderAsync {
             raw: ManuallyDrop::new(raw),
             callback: ManuallyDrop::new(callback),
@@ -547,11 +544,8 @@ impl<C: IsChannelCount, T: IsFormat> AudioStreamBuilder<Output, C, T> {
         F: AudioOutputCallback<FrameType = (T, C)>,
         (T, C): IsFrameType,
     {
-        let mut callback = AudioCallbackWrapper::<Output, F>::wrap(stream_callback);
         let mut raw = self.destructs();
-        unsafe {
-            ffi::oboe_AudioStreamBuilder_setCallback(&mut *raw, callback.raw_callback());
-        }
+        let callback = AudioCallbackWrapper::<Output, F>::set_callback(&mut raw, stream_callback);
         AudioStreamBuilderAsync {
             raw: ManuallyDrop::new(raw),
             callback: ManuallyDrop::new(callback),
@@ -571,13 +565,10 @@ pub struct AudioStreamBuilderAsync<D, F> {
 
 impl<D, F> Drop for AudioStreamBuilderAsync<D, F> {
     fn drop(&mut self) {
-        // SAFETY: the stream has not yet been open (Self::drop is not called after open_stream),
-        // so there is no data thread or error thread using this callback yet.
+        // SAFETY: raw and callback are only droped here, or taken in Self::destructs, which don't
+        // drop self.
         unsafe {
-            self.callback.delete();
-        }
-        // SAFETY: self.raw is only drop here, or taken in Self::destructs, which don't drop self.
-        unsafe {
+            ManuallyDrop::drop(&mut self.callback);
             ManuallyDrop::drop(&mut self.raw);
         }
     }

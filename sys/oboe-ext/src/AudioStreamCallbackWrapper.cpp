@@ -4,16 +4,20 @@
 
 namespace oboe {
   AudioStreamCallbackWrapper::
-  AudioStreamCallbackWrapper(const AudioReadyHandler audio_ready,
+  AudioStreamCallbackWrapper(void *context,
+                             const DropContextHandler drop_context,
+                             const AudioReadyHandler audio_ready,
                              const ErrorCloseHandler before_close,
                              const ErrorCloseHandler after_close):
-    _context(nullptr),
+    _context(context),
+    _drop_context(drop_context),
     _audio_ready(audio_ready),
     _before_close(before_close),
     _after_close(after_close) {}
 
-  void AudioStreamCallbackWrapper::setContext(void *context) {
-    _context = context;
+  AudioStreamCallbackWrapper
+   ::~AudioStreamCallbackWrapper() {
+     _drop_context(_context);
   }
 
   DataCallbackResult AudioStreamCallbackWrapper::
@@ -35,16 +39,8 @@ namespace oboe {
     _after_close(_context, oboeStream, error);
   }
 
-  AudioStreamCallbackWrapper *
-  AudioStreamCallbackWrapper_new(const AudioReadyHandler audio_ready,
-                                 const ErrorCloseHandler before_close,
-                                 const ErrorCloseHandler after_close) {
-    return new AudioStreamCallbackWrapper(audio_ready,
-                                          before_close,
-                                          after_close);
-  }
-
-  void AudioStreamCallbackWrapper_delete(AudioStreamCallbackWrapper *callback) {
-    delete callback;
+  void AudioStreamCallbackWrapper_delete(void *callback) {
+    std::shared_ptr<AudioStreamCallbackWrapper> *s = (std::shared_ptr<AudioStreamCallbackWrapper> *)callback;
+    delete s;
   }
 }

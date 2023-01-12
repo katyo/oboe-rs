@@ -659,13 +659,6 @@ impl<D, F> Drop for AudioStreamAsync<D, F> {
         unsafe {
             let _ = self.close();
             self.raw.delete();
-
-            // NOTE: Currently there is no safe way to delete the AudioStreamCallback, so we are
-            // leaking it here.
-            // see https://github.com/google/oboe/issues/1610 and https://github.com/google/oboe/issues/1603
-
-            // replace this by `self.callback.delete()` when a fix upstream appear.
-            let _ = &self.callback;
         }
     }
 }
