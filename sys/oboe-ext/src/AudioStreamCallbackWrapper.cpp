@@ -7,7 +7,6 @@ namespace oboe {
   AudioStreamCallbackWrapper(const AudioReadyHandler audio_ready,
                              const ErrorCloseHandler before_close,
                              const ErrorCloseHandler after_close):
-    AudioStreamCallback(),
     _context(nullptr),
     _audio_ready(audio_ready),
     _before_close(before_close),

@@ -27,7 +27,8 @@ namespace oboe {
 
   void AudioStreamBuilder_setCallback(AudioStreamBuilder *builder,
                                       AudioStreamCallbackWrapper *callback) {
-    builder->setCallback(callback);
+    builder->setDataCallback(callback);
+    builder->setErrorCallback(callback);
   }
 
   AudioStreamBase* AudioStreamBuilder_getBase(AudioStreamBuilder *builder) {

@@ -13,7 +13,8 @@ namespace oboe {
                                     AudioStream *oboeStream,
                                     Result error);
 
-  class AudioStreamCallbackWrapper: public AudioStreamCallback {
+  class AudioStreamCallbackWrapper
+      : public AudioStreamDataCallback, public AudioStreamErrorCallback {
   public:
     AudioStreamCallbackWrapper(const AudioReadyHandler audio_ready,
                                const ErrorCloseHandler before_close,
