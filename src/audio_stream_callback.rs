@@ -1,6 +1,5 @@
 use std::{
     ffi::c_void,
-    marker::PhantomData,
     slice::{from_raw_parts, from_raw_parts_mut},
 };
 
@@ -10,7 +9,7 @@ use num_traits::FromPrimitive;
 
 use super::{
     AudioInputStreamSafe, AudioOutputStreamSafe, AudioStreamBuilderHandle, AudioStreamRef,
-    DataCallbackResult, Error, Input, IsFrameType, Output,
+    DataCallbackResult, Error, IsFrameType,
 };
 
 /**
@@ -207,75 +206,44 @@ pub trait AudioOutputCallback {
     ) -> DataCallbackResult;
 }
 
-pub(crate) struct AudioCallbackWrapper<D, T> {
-    raw: *mut c_void,
-    _phantom: PhantomData<(D, T)>,
-}
+pub(crate) fn set_input_callback<T: AudioInputCallback>(
+    builder: &mut AudioStreamBuilderHandle,
+    callback: T,
+) {
+    let callback = Box::into_raw(Box::new(callback));
 
-impl<D, T> Drop for AudioCallbackWrapper<D, T> {
-    fn drop(&mut self) {
-        // SAFETY: As long as `self` was created at AudioCallbackwrapper::set_callback, self.raw is
-        // a valid pointer, and this call is safe.
-        unsafe {
-            ffi::oboe_AudioStreamCallbackWrapper_delete(self.raw);
-        }
+    // SAFETY: `callback` has the same type as the first argument of each function, and each
+    // function follows the C ABI.
+    unsafe {
+        ffi::oboe_AudioStreamBuilder_setCallback(
+            &mut **builder as *mut ffi::oboe_AudioStreamBuilder,
+            callback.cast(),
+            Some(drop_context::<T>),
+            Some(on_audio_ready_input_wrapper::<T>),
+            Some(on_error_before_close_input_wrapper::<T>),
+            Some(on_error_after_close_input_wrapper::<T>),
+        );
     }
 }
 
-impl<T> AudioCallbackWrapper<Input, T>
-where
-    T: AudioInputCallback,
-{
-    pub(crate) fn set_callback(builder: &mut AudioStreamBuilderHandle, callback: T) -> Self {
-        let callback = Box::into_raw(Box::new(callback));
+pub(crate) fn set_output_callback<T: AudioOutputCallback>(
+    builder: &mut AudioStreamBuilderHandle,
+    callback: T,
+) {
+    let callback = Box::new(callback);
+    let callback = Box::into_raw(callback);
 
-        // SAFETY: `callback` has the same type as the first argument of each function, and each
-        // function follows the C ABI.
-        let raw = unsafe {
-            ffi::oboe_AudioStreamBuilder_setCallback(
-                &mut **builder as *mut ffi::oboe_AudioStreamBuilder,
-                callback.cast(),
-                Some(drop_context::<T>),
-                Some(on_audio_ready_input_wrapper::<T>),
-                Some(on_error_before_close_input_wrapper::<T>),
-                Some(on_error_after_close_input_wrapper::<T>),
-            )
-        };
-
-        let wrapper = Self {
-            raw,
-            _phantom: PhantomData,
-        };
-        wrapper
-    }
-}
-
-impl<T> AudioCallbackWrapper<Output, T>
-where
-    T: AudioOutputCallback,
-{
-    pub(crate) fn set_callback(builder: &mut AudioStreamBuilderHandle, callback: T) -> Self {
-        let callback = Box::new(callback);
-        let callback = Box::into_raw(callback);
-
-        // SAFETY: `callback` has the same type as the first argument of each function, and each
-        // function follows the C ABI.
-        let raw = unsafe {
-            ffi::oboe_AudioStreamBuilder_setCallback(
-                &mut **builder as *mut ffi::oboe_AudioStreamBuilder,
-                callback.cast(),
-                Some(drop_context::<T>),
-                Some(on_audio_ready_output_wrapper::<T>),
-                Some(on_error_before_close_output_wrapper::<T>),
-                Some(on_error_after_close_output_wrapper::<T>),
-            )
-        };
-
-        let wrapper = Self {
-            raw,
-            _phantom: PhantomData,
-        };
-        wrapper
+    // SAFETY: `callback` has the same type as the first argument of each function, and each
+    // function follows the C ABI.
+    unsafe {
+        ffi::oboe_AudioStreamBuilder_setCallback(
+            &mut **builder as *mut ffi::oboe_AudioStreamBuilder,
+            callback.cast(),
+            Some(drop_context::<T>),
+            Some(on_audio_ready_output_wrapper::<T>),
+            Some(on_error_before_close_output_wrapper::<T>),
+            Some(on_error_after_close_output_wrapper::<T>),
+        );
     }
 }
 

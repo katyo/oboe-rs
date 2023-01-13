@@ -44,16 +44,14 @@ namespace oboe {
     const ErrorCloseHandler _after_close;
   };
 
-  void AudioStreamCallbackWrapper_delete(void *callback);
-
   AudioStreamBuilder *AudioStreamBuilder_new();
   void AudioStreamBuilder_delete(AudioStreamBuilder *builder);
-  void* AudioStreamBuilder_setCallback(AudioStreamBuilder *builder,
-                                       void *context,
-                                       const DropContextHandler drop_context,
-                                       const AudioReadyHandler audio_ready,
-                                       const ErrorCloseHandler before_close,
-                                       const ErrorCloseHandler after_close);
+  void AudioStreamBuilder_setCallback(AudioStreamBuilder *builder,
+                                      void *context,
+                                      const DropContextHandler drop_context,
+                                      const AudioReadyHandler audio_ready,
+                                      const ErrorCloseHandler before_close,
+                                      const ErrorCloseHandler after_close);
 
   AudioApi AudioStreamBuilder_getAudioApi(const AudioStreamBuilder *builder);
   void AudioStreamBuilder_setAudioApi(AudioStreamBuilder *builder, AudioApi api);

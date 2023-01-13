@@ -1650,10 +1650,6 @@ extern "C" {
     );
 }
 extern "C" {
-    #[link_name = "\u{1}_ZN4oboe33AudioStreamCallbackWrapper_deleteEPv"]
-    pub fn oboe_AudioStreamCallbackWrapper_delete(callback: *mut ::std::os::raw::c_void);
-}
-extern "C" {
     #[link_name = "\u{1}_ZN4oboe22AudioStreamBuilder_newEv"]
     pub fn oboe_AudioStreamBuilder_new() -> *mut oboe_AudioStreamBuilder;
 }
@@ -1670,7 +1666,7 @@ extern "C" {
         audio_ready: oboe_AudioReadyHandler,
         before_close: oboe_ErrorCloseHandler,
         after_close: oboe_ErrorCloseHandler,
-    ) -> *mut ::std::os::raw::c_void;
+    );
 }
 extern "C" {
     #[link_name = "\u{1}_ZN4oboe30AudioStreamBuilder_getAudioApiEPKNS_18AudioStreamBuilderE"]
