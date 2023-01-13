@@ -10,10 +10,9 @@ use std::{
 };
 
 use super::{
-    audio_stream_base_fmt, wrap_result, wrap_status, AudioApi, AudioCallbackWrapper,
-    AudioStreamBase, FrameTimestamp, Input, IsFrameType, Output, RawAudioInputStream,
-    RawAudioOutputStream, RawAudioStream, RawAudioStreamBase, Result, Status, StreamState,
-    NANOS_PER_MILLISECOND,
+    audio_stream_base_fmt, wrap_result, wrap_status, AudioApi, AudioStreamBase, FrameTimestamp,
+    Input, IsFrameType, Output, RawAudioInputStream, RawAudioOutputStream, RawAudioStream,
+    RawAudioStreamBase, Result, Status, StreamState, NANOS_PER_MILLISECOND,
 };
 
 /**
@@ -629,7 +628,7 @@ impl<'s> RawAudioOutputStream for AudioStreamRef<'s, Output> {}
  */
 pub struct AudioStreamAsync<D, F> {
     raw: AudioStreamHandle,
-    callback: AudioCallbackWrapper<D, F>,
+    _phantom: PhantomData<(D, F)>,
 }
 
 impl<D, F> fmt::Debug for AudioStreamAsync<D, F> {
@@ -639,15 +638,14 @@ impl<D, F> fmt::Debug for AudioStreamAsync<D, F> {
 }
 
 impl<D, F> AudioStreamAsync<D, F> {
-    // SAFETY: `raw`, `shared_ptr` and `callback` must be valid.
+    // SAFETY: `raw` and `shared_ptr` must be valid.
     pub(crate) unsafe fn wrap_raw(
         raw: *mut ffi::oboe_AudioStream,
         shared_ptr: *mut c_void,
-        callback: AudioCallbackWrapper<D, F>,
     ) -> Self {
         Self {
             raw: AudioStreamHandle(raw, shared_ptr),
-            callback,
+            _phantom: PhantomData,
         }
     }
 }

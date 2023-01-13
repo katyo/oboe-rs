@@ -38,9 +38,4 @@ namespace oboe {
                     Result error) {
     _after_close(_context, oboeStream, error);
   }
-
-  void AudioStreamCallbackWrapper_delete(void *callback) {
-    std::shared_ptr<AudioStreamCallbackWrapper> *s = (std::shared_ptr<AudioStreamCallbackWrapper> *)callback;
-    delete s;
-  }
 }
