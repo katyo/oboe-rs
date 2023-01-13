@@ -1545,6 +1545,8 @@ extern "C" {
         numFrames: i32,
     ) -> oboe_DataCallbackResult;
 }
+pub type oboe_DropContextHandler =
+    ::std::option::Option<unsafe extern "C" fn(context: *mut ::std::os::raw::c_void)>;
 pub type oboe_AudioReadyHandler = ::std::option::Option<
     unsafe extern "C" fn(
         context: *mut ::std::os::raw::c_void,
@@ -1563,8 +1565,10 @@ pub type oboe_ErrorCloseHandler = ::std::option::Option<
 #[repr(C)]
 #[derive(Debug)]
 pub struct oboe_AudioStreamCallbackWrapper {
-    pub _base: oboe_AudioStreamCallback,
+    pub _base: oboe_AudioStreamDataCallback,
+    pub _base_1: oboe_AudioStreamErrorCallback,
     pub _context: *mut ::std::os::raw::c_void,
+    pub _drop_context: oboe_DropContextHandler,
     pub _audio_ready: oboe_AudioReadyHandler,
     pub _before_close: oboe_ErrorCloseHandler,
     pub _after_close: oboe_ErrorCloseHandler,
@@ -1573,7 +1577,7 @@ pub struct oboe_AudioStreamCallbackWrapper {
 fn bindgen_test_layout_oboe_AudioStreamCallbackWrapper() {
     assert_eq!(
         ::std::mem::size_of::<oboe_AudioStreamCallbackWrapper>(),
-        48usize,
+        56usize,
         concat!("Size of: ", stringify!(oboe_AudioStreamCallbackWrapper))
     );
     assert_eq!(
@@ -1581,86 +1585,13 @@ fn bindgen_test_layout_oboe_AudioStreamCallbackWrapper() {
         8usize,
         concat!("Alignment of ", stringify!(oboe_AudioStreamCallbackWrapper))
     );
-    fn test_field__context() {
-        assert_eq!(
-            unsafe {
-                let uninit = ::std::mem::MaybeUninit::<oboe_AudioStreamCallbackWrapper>::uninit();
-                let ptr = uninit.as_ptr();
-                ::std::ptr::addr_of!((*ptr)._context) as usize - ptr as usize
-            },
-            16usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(oboe_AudioStreamCallbackWrapper),
-                "::",
-                stringify!(_context)
-            )
-        );
-    }
-    test_field__context();
-    fn test_field__audio_ready() {
-        assert_eq!(
-            unsafe {
-                let uninit = ::std::mem::MaybeUninit::<oboe_AudioStreamCallbackWrapper>::uninit();
-                let ptr = uninit.as_ptr();
-                ::std::ptr::addr_of!((*ptr)._audio_ready) as usize - ptr as usize
-            },
-            24usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(oboe_AudioStreamCallbackWrapper),
-                "::",
-                stringify!(_audio_ready)
-            )
-        );
-    }
-    test_field__audio_ready();
-    fn test_field__before_close() {
-        assert_eq!(
-            unsafe {
-                let uninit = ::std::mem::MaybeUninit::<oboe_AudioStreamCallbackWrapper>::uninit();
-                let ptr = uninit.as_ptr();
-                ::std::ptr::addr_of!((*ptr)._before_close) as usize - ptr as usize
-            },
-            32usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(oboe_AudioStreamCallbackWrapper),
-                "::",
-                stringify!(_before_close)
-            )
-        );
-    }
-    test_field__before_close();
-    fn test_field__after_close() {
-        assert_eq!(
-            unsafe {
-                let uninit = ::std::mem::MaybeUninit::<oboe_AudioStreamCallbackWrapper>::uninit();
-                let ptr = uninit.as_ptr();
-                ::std::ptr::addr_of!((*ptr)._after_close) as usize - ptr as usize
-            },
-            40usize,
-            concat!(
-                "Offset of field: ",
-                stringify!(oboe_AudioStreamCallbackWrapper),
-                "::",
-                stringify!(_after_close)
-            )
-        );
-    }
-    test_field__after_close();
 }
 extern "C" {
-    #[link_name = "\u{1}_ZN4oboe26AudioStreamCallbackWrapper10setContextEPv"]
-    pub fn oboe_AudioStreamCallbackWrapper_setContext(
-        this: *mut oboe_AudioStreamCallbackWrapper,
-        context: *mut ::std::os::raw::c_void,
-    );
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe26AudioStreamCallbackWrapperC1EPFNS_18DataCallbackResultEPvPNS_11AudioStreamES2_iEPFvS2_S4_NS_6ResultEES9_"]
+    #[link_name = "\u{1}_ZN4oboe26AudioStreamCallbackWrapperC1EPvPFvS1_EPFNS_18DataCallbackResultES1_PNS_11AudioStreamES1_iEPFvS1_S6_NS_6ResultEESB_"]
     pub fn oboe_AudioStreamCallbackWrapper_AudioStreamCallbackWrapper(
         this: *mut oboe_AudioStreamCallbackWrapper,
+        context: *mut ::std::os::raw::c_void,
+        drop_context: oboe_DropContextHandler,
         audio_ready: oboe_AudioReadyHandler,
         before_close: oboe_ErrorCloseHandler,
         after_close: oboe_ErrorCloseHandler,
@@ -1668,11 +1599,9 @@ extern "C" {
 }
 impl oboe_AudioStreamCallbackWrapper {
     #[inline]
-    pub unsafe fn setContext(&mut self, context: *mut ::std::os::raw::c_void) {
-        oboe_AudioStreamCallbackWrapper_setContext(self, context)
-    }
-    #[inline]
     pub unsafe fn new(
+        context: *mut ::std::os::raw::c_void,
+        drop_context: oboe_DropContextHandler,
         audio_ready: oboe_AudioReadyHandler,
         before_close: oboe_ErrorCloseHandler,
         after_close: oboe_ErrorCloseHandler,
@@ -1680,12 +1609,20 @@ impl oboe_AudioStreamCallbackWrapper {
         let mut __bindgen_tmp = ::std::mem::MaybeUninit::uninit();
         oboe_AudioStreamCallbackWrapper_AudioStreamCallbackWrapper(
             __bindgen_tmp.as_mut_ptr(),
+            context,
+            drop_context,
             audio_ready,
             before_close,
             after_close,
         );
         __bindgen_tmp.assume_init()
     }
+}
+extern "C" {
+    #[link_name = "\u{1}_ZN4oboe26AudioStreamCallbackWrapperD1Ev"]
+    pub fn oboe_AudioStreamCallbackWrapper_AudioStreamCallbackWrapper_destructor(
+        this: *mut oboe_AudioStreamCallbackWrapper,
+    );
 }
 extern "C" {
     #[link_name = "\u{1}_ZN4oboe26AudioStreamCallbackWrapper12onAudioReadyEPNS_11AudioStreamEPvi"]
@@ -1713,16 +1650,8 @@ extern "C" {
     );
 }
 extern "C" {
-    #[link_name = "\u{1}_ZN4oboe30AudioStreamCallbackWrapper_newEPFNS_18DataCallbackResultEPvPNS_11AudioStreamES1_iEPFvS1_S3_NS_6ResultEES8_"]
-    pub fn oboe_AudioStreamCallbackWrapper_new(
-        audio_ready: oboe_AudioReadyHandler,
-        before_close: oboe_ErrorCloseHandler,
-        after_close: oboe_ErrorCloseHandler,
-    ) -> *mut oboe_AudioStreamCallbackWrapper;
-}
-extern "C" {
-    #[link_name = "\u{1}_ZN4oboe33AudioStreamCallbackWrapper_deleteEPNS_26AudioStreamCallbackWrapperE"]
-    pub fn oboe_AudioStreamCallbackWrapper_delete(callback: *mut oboe_AudioStreamCallbackWrapper);
+    #[link_name = "\u{1}_ZN4oboe33AudioStreamCallbackWrapper_deleteEPv"]
+    pub fn oboe_AudioStreamCallbackWrapper_delete(callback: *mut ::std::os::raw::c_void);
 }
 extern "C" {
     #[link_name = "\u{1}_ZN4oboe22AudioStreamBuilder_newEv"]
@@ -1733,11 +1662,15 @@ extern "C" {
     pub fn oboe_AudioStreamBuilder_delete(builder: *mut oboe_AudioStreamBuilder);
 }
 extern "C" {
-    #[link_name = "\u{1}_ZN4oboe30AudioStreamBuilder_setCallbackEPNS_18AudioStreamBuilderEPNS_26AudioStreamCallbackWrapperE"]
+    #[link_name = "\u{1}_ZN4oboe30AudioStreamBuilder_setCallbackEPNS_18AudioStreamBuilderEPvPFvS2_EPFNS_18DataCallbackResultES2_PNS_11AudioStreamES2_iEPFvS2_S7_NS_6ResultEESC_"]
     pub fn oboe_AudioStreamBuilder_setCallback(
         builder: *mut oboe_AudioStreamBuilder,
-        callback: *mut oboe_AudioStreamCallbackWrapper,
-    );
+        context: *mut ::std::os::raw::c_void,
+        drop_context: oboe_DropContextHandler,
+        audio_ready: oboe_AudioReadyHandler,
+        before_close: oboe_ErrorCloseHandler,
+        after_close: oboe_ErrorCloseHandler,
+    ) -> *mut ::std::os::raw::c_void;
 }
 extern "C" {
     #[link_name = "\u{1}_ZN4oboe30AudioStreamBuilder_getAudioApiEPKNS_18AudioStreamBuilderE"]
