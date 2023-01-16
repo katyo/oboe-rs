@@ -22,8 +22,9 @@ where
     F: FnOnce(&JNIEnv, JObject) -> JResult<R>,
 {
     let vm = Arc::new(unsafe { JavaVM::from_raw(context.vm().cast())? });
-    let context = context.context() as jobject;
-    Executor::new(vm).with_attached(|env| closure(env, context.into()))
+    let context = context.context();
+    let context = unsafe { JObject::from_raw(context as jobject) };
+    Executor::new(vm).with_attached(|env| closure(env, context))
 }
 
 pub fn call_method_no_args_ret_int_array<'a>(
@@ -33,7 +34,7 @@ pub fn call_method_no_args_ret_int_array<'a>(
 ) -> JResult<Vec<i32>> {
     let array = env.auto_local(env.call_method(subject, method, "()[I", &[])?.l()?);
 
-    let raw_array = array.as_obj().into_inner();
+    let raw_array = array.as_obj().into_raw();
 
     let length = env.get_array_length(raw_array)?;
     let mut values = Vec::with_capacity(length as usize);

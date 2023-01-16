@@ -25,7 +25,7 @@ fn main() {
         target,
         profile,
         "https://github.com/katyo/{package}-rs/releases/download/{version}/lib{package}-ext_{target}_{profile}.tar.gz",
-        &out_dir,
+        out_dir,
         src_dir,
         ext_dir,
     );
