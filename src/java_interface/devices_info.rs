@@ -47,7 +47,7 @@ fn try_request_devices_info<'a>(
 
     let devices = env.auto_local(get_devices(env, audio_manager, direction as i32)?);
 
-    let raw_devices = devices.as_obj().into_inner();
+    let raw_devices = devices.as_obj().into_raw();
 
     let length = env.get_array_length(raw_devices)?;
 
