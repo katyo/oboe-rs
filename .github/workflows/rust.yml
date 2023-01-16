@@ -10,7 +10,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - name: Setup Rust
@@ -21,7 +21,7 @@ jobs:
           components: rustfmt
           default: true
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Format
         uses: actions-rs/cargo@v1
         with:
@@ -31,7 +31,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - name: Setup Rust
@@ -43,7 +43,7 @@ jobs:
           components: rust-docs
           default: true
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Documentation
         uses: actions-rs/cargo@v1
         env:
@@ -86,7 +86,7 @@ jobs:
           components: clippy
           default: true
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -114,7 +114,7 @@ jobs:
           - i686-linux-android
           - x86_64-linux-android
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - name: Setup JDK
@@ -142,23 +142,23 @@ jobs:
           default: true
           override: true
       - name: Setup Cargo ndk
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cargo/bin/cargo-ndk
           key: ${{ runner.os }}-cargo-ndk-v1
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Prepare config
         id: config
         run: |
           if [[ "${{ matrix.target }}" =~ "64" ]]; then
-            echo "::set-output name=android-api::21"
+            echo "android-api=21" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=android-api::16"
+            echo "android-api=16" >> $GITHUB_OUTPUT
           fi
           if [[ "${{ matrix.profile }}" == "release" ]]; then
-            echo "::set-output name=cargo-args::--release"
+            echo "cargo-args=--release" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=cargo-args::"
+            echo "cargo-args=" >> $GITHUB_OUTPUT
           fi
       - name: Build target ${{ matrix.target }}
         uses: actions-rs/cargo@v1
@@ -170,7 +170,7 @@ jobs:
       - name: Get latest build path
         id: result
         run: |
-          echo "::set-output name=build-path::$(ls -td target/${{ matrix.target }}/${{ matrix.profile }}/build/oboe-sys-*/ | head -1)"
+          echo "build-path=$(ls -td target/${{ matrix.target }}/${{ matrix.profile }}/build/oboe-sys-*/ | head -1)" >> $GITHUB_OUTPUT
       - name: Copy bindings
         if: matrix.rust == 'stable' && matrix.profile == 'release'
         run: |
@@ -198,7 +198,7 @@ jobs:
       - build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - name: Download bindings
@@ -223,7 +223,7 @@ jobs:
       - cargo-apk
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - name: Setup JDK
@@ -239,15 +239,21 @@ jobs:
         with:
           targets: armv7-linux-androideabi, aarch64-linux-android, i686-linux-android, x86_64-linux-android
       - name: Setup Cargo apk
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cargo/bin/cargo-apk
           key: ${{ runner.os }}-cargo-apk
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Create signing key
         run: |
-          echo ${{ secrets.APK_SIGN_KEY_DATA }} | base64 -d > demo/release.keystore
-          sed -i 's/keystore_password = "android"/keystore_password = "${{ secrets.APK_SIGN_KEY_SECRET }}"/' demo/Cargo.toml
+          if [ -z "${{ secrets.APK_KEYSTORE_PASSWORD }}" ]; then
+            # create temporary keystore to sign apk
+            rm -f demo/release.keystore
+            keytool -genkey -dname "cn=Nobrand, ou=RnD, o=example.com, c=US" -v -keystore demo/release.keystore -alias demo -keyalg RSA -keysize 2048 -validity 20000 -storepass android
+          else
+            # use existing keystore to sign apk
+            sed -i 's/keystore_password = "android"/keystore_password = "${{ secrets.APK_KEYSTORE_PASSWORD }}"/' demo/Cargo.toml
+          fi
       - name: Build demo apk
         uses: actions-rs/cargo@v1
         with:
@@ -292,7 +298,7 @@ jobs:
       - release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - name: Setup Rust
@@ -311,7 +317,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Prepare cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache
         with:
           path: ~/.cargo/bin/cargo-ndk
@@ -327,7 +333,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Prepare cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         id: cache
         with:
           path: ~/.cargo/bin/cargo-apk
