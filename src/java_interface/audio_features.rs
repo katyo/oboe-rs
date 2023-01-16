@@ -46,11 +46,7 @@ impl AudioFeature {
     }
 }
 
-fn try_check_system_feature<'a>(
-    env: &JNIEnv<'a>,
-    activity: JObject,
-    feature: &str,
-) -> JResult<bool> {
+fn try_check_system_feature(env: &JNIEnv<'_>, activity: JObject, feature: &str) -> JResult<bool> {
     let package_manager = get_package_manager(env, activity)?;
 
     has_system_feature(env, package_manager, feature)

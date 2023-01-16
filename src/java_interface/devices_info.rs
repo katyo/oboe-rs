@@ -38,8 +38,8 @@ impl AudioDeviceInfo {
     }
 }
 
-fn try_request_devices_info<'a>(
-    env: &JNIEnv<'a>,
+fn try_request_devices_info(
+    env: &JNIEnv<'_>,
     context: JObject,
     direction: AudioDeviceDirection,
 ) -> JResult<Vec<AudioDeviceInfo>> {
@@ -52,7 +52,6 @@ fn try_request_devices_info<'a>(
     let length = env.get_array_length(raw_devices)?;
 
     (0..length)
-        .into_iter()
         .map(|index| {
             let device = env.get_object_array_element(raw_devices, index)?;
 

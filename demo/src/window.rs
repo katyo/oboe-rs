@@ -90,7 +90,7 @@ impl ViewContext {
             .with_gl_debug_flag(false)
             .with_srgb(false)
             .with_vsync(true)
-            .build_windowed(wb, &el)
+            .build_windowed(wb, el)
             .unwrap();
         let context = unsafe { context.make_current().unwrap() };
         //let gl = Gl::load_with(|ptr| window_context.get_proc_address(ptr) as *const _);

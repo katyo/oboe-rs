@@ -27,8 +27,8 @@ where
     Executor::new(vm).with_attached(|env| closure(env, context))
 }
 
-pub fn call_method_no_args_ret_int_array<'a>(
-    env: &JNIEnv<'a>,
+pub fn call_method_no_args_ret_int_array(
+    env: &JNIEnv<'_>,
     subject: JObject,
     method: &str,
 ) -> JResult<Vec<i32>> {
@@ -44,24 +44,24 @@ pub fn call_method_no_args_ret_int_array<'a>(
     Ok(values)
 }
 
-pub fn call_method_no_args_ret_int<'a>(
-    env: &JNIEnv<'a>,
+pub fn call_method_no_args_ret_int(
+    env: &JNIEnv<'_>,
     subject: JObject,
     method: &str,
 ) -> JResult<i32> {
     env.call_method(subject, method, "()I", &[])?.i()
 }
 
-pub fn call_method_no_args_ret_bool<'a>(
-    env: &JNIEnv<'a>,
+pub fn call_method_no_args_ret_bool(
+    env: &JNIEnv<'_>,
     subject: JObject,
     method: &str,
 ) -> JResult<bool> {
     env.call_method(subject, method, "()Z", &[])?.z()
 }
 
-pub fn call_method_no_args_ret_string<'a>(
-    env: &JNIEnv<'a>,
+pub fn call_method_no_args_ret_string(
+    env: &JNIEnv<'_>,
     subject: JObject,
     method: &str,
 ) -> JResult<String> {
@@ -73,8 +73,8 @@ pub fn call_method_no_args_ret_string<'a>(
     .map(String::from)
 }
 
-pub fn call_method_no_args_ret_char_sequence<'a>(
-    env: &JNIEnv<'a>,
+pub fn call_method_no_args_ret_char_sequence(
+    env: &JNIEnv<'_>,
     subject: JObject,
     method: &str,
 ) -> JResult<String> {
@@ -92,8 +92,8 @@ pub fn call_method_no_args_ret_char_sequence<'a>(
     .map(String::from)
 }
 
-pub fn call_method_string_arg_ret_bool<'a, S: AsRef<str>>(
-    env: &JNIEnv<'a>,
+pub fn call_method_string_arg_ret_bool<S: AsRef<str>>(
+    env: &JNIEnv<'_>,
     subject: JObject,
     name: &str,
     arg: S,
@@ -150,7 +150,7 @@ pub fn get_package_manager<'a>(env: &JNIEnv<'a>, subject: JObject<'a>) -> JResul
     .l()
 }
 
-pub fn has_system_feature<'a>(env: &JNIEnv<'a>, subject: JObject, name: &str) -> JResult<bool> {
+pub fn has_system_feature(env: &JNIEnv<'_>, subject: JObject, name: &str) -> JResult<bool> {
     call_method_string_arg_ret_bool(env, subject, "hasSystemFeature", name)
 }
 

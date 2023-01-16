@@ -49,8 +49,8 @@ impl DefaultStreamValues {
     }
 }
 
-fn try_request_default_stream_values<'a>(
-    env: &JNIEnv<'a>,
+fn try_request_default_stream_values(
+    env: &JNIEnv<'_>,
     context: JObject,
 ) -> JResult<(Option<i32>, Option<i32>)> {
     let audio_manager = get_system_service(env, context, Context::AUDIO_SERVICE)?;

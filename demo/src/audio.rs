@@ -86,10 +86,7 @@ impl SineParam {
         self.delta.store(delta, Ordering::Release);
         self.sample_rate.store(sample_rate, Ordering::Relaxed);
 
-        println!(
-            "Prepare sine wave generator: samplerate={}, time delta={}",
-            sample_rate, delta
-        );
+        println!("Prepare sine wave generator: samplerate={sample_rate}, time delta={delta}");
     }
 
     fn set_frequency(&self, frequency: f32) {
@@ -151,7 +148,7 @@ impl AudioOutputCallback for SineWave<f32, Mono> {
 
     fn on_audio_ready(
         &mut self,
-        stream: &mut dyn AudioOutputStreamSafe,
+        _stream: &mut dyn AudioOutputStreamSafe,
         frames: &mut [f32],
     ) -> DataCallbackResult {
         for frame in frames {
@@ -166,7 +163,7 @@ impl AudioOutputCallback for SineWave<f32, Stereo> {
 
     fn on_audio_ready(
         &mut self,
-        stream: &mut dyn AudioOutputStreamSafe,
+        _stream: &mut dyn AudioOutputStreamSafe,
         frames: &mut [(f32, f32)],
     ) -> DataCallbackResult {
         for frame in frames {
@@ -180,7 +177,7 @@ impl AudioOutputCallback for SineWave<f32, Stereo> {
 /// Print device's audio info
 pub fn audio_probe() {
     if let Err(error) = DefaultStreamValues::init() {
-        eprintln!("Unable to init default stream values due to: {}", error);
+        eprintln!("Unable to init default stream values due to: {error}");
     }
 
     println!("Default stream values:");
