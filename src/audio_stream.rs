@@ -679,11 +679,11 @@ impl<D, T> RawAudioStreamBase for AudioStreamAsync<D, T> {
 
 impl<D, F> RawAudioStream for AudioStreamAsync<D, F> {
     fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        &*self.raw
+        &self.raw
     }
 
     fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        &mut *self.raw
+        &mut self.raw
     }
 }
 
@@ -735,11 +735,11 @@ impl<D, T> RawAudioStreamBase for AudioStreamSync<D, T> {
 
 impl<D, F> RawAudioStream for AudioStreamSync<D, F> {
     fn _raw_stream(&self) -> &ffi::oboe_AudioStream {
-        &*self.raw
+        &self.raw
     }
 
     fn _raw_stream_mut(&mut self) -> &mut ffi::oboe_AudioStream {
-        &mut *self.raw
+        &mut self.raw
     }
 }
 
