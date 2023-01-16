@@ -48,12 +48,8 @@ namespace oboe {
   }
 
   Result AudioStreamBuilder_openStreamShared(AudioStreamBuilder *builder,
-                                             AudioStream **stream,
-                                             void **shared_ptr) {
-    std::shared_ptr<AudioStream> *s = new std::shared_ptr<AudioStream>();
-    Result res = builder->openStream(*s);
-    *stream = s->get();
-    *shared_ptr = (void *)s;
-    return res;
+                                             AudioStreamShared *sharedStream) {
+    new(sharedStream) std::shared_ptr<AudioStream>(); // call constructor on preallocated data buffer
+    return builder->openStream(*sharedStream);
   }
 }

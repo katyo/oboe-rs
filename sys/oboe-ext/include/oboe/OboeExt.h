@@ -4,6 +4,8 @@
 #include "oboe/Oboe.h"
 
 namespace oboe {
+  typedef std::shared_ptr<AudioStream> AudioStreamShared;
+
   typedef void (*DropContextHandler)(void *context);
 
   typedef DataCallbackResult (*AudioReadyHandler)(void *context,
@@ -56,12 +58,14 @@ namespace oboe {
   AudioApi AudioStreamBuilder_getAudioApi(const AudioStreamBuilder *builder);
   void AudioStreamBuilder_setAudioApi(AudioStreamBuilder *builder, AudioApi api);
   AudioStreamBase* AudioStreamBuilder_getBase(AudioStreamBuilder *builder);
+
   Result AudioStreamBuilder_openStreamShared(AudioStreamBuilder *builder,
-                                             AudioStream **stream,
-                                             void **shared_ptr);
-  
-  void AudioStream_delete(AudioStream *oboeStream);
-  void AudioStream_deleteShared(void *shared_ptr);
+                                             AudioStreamShared *sharedStream);
+
+  void AudioStreamShared_clone(const AudioStreamShared *sharedStream,
+                               AudioStreamShared *newSharedStream);
+  void AudioStreamShared_delete(AudioStreamShared *sharedStream);
+  AudioStream *AudioStreamShared_deref(AudioStreamShared *sharedStream);
   Result AudioStream_open(AudioStream *oboeStream);
   Result AudioStream_close(AudioStream *oboeStream);
   Result AudioStream_requestStart(AudioStream *oboeStream);

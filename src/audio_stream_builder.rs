@@ -1,10 +1,9 @@
 use num_traits::FromPrimitive;
 use oboe_sys as ffi;
 use std::{
-    ffi::c_void,
     fmt,
     marker::PhantomData,
-    mem::{ManuallyDrop, MaybeUninit},
+    mem::ManuallyDrop,
     ops::{Deref, DerefMut},
 };
 
@@ -12,13 +11,25 @@ use crate::{set_input_callback, set_output_callback};
 
 use super::{
     audio_stream_base_fmt, wrap_status, AudioApi, AudioInputCallback, AudioOutputCallback,
-    AudioStreamAsync, AudioStreamSync, ContentType, Input, InputPreset, IsChannelCount,
-    IsDirection, IsFormat, IsFrameType, Mono, Output, PerformanceMode, RawAudioStreamBase, Result,
-    SampleRateConversionQuality, SessionId, SharingMode, Stereo, Unspecified, Usage,
+    AudioStreamAsync, AudioStreamHandle, AudioStreamSync, ContentType, Input, InputPreset,
+    IsChannelCount, IsDirection, IsFormat, IsFrameType, Mono, Output, PerformanceMode,
+    RawAudioStreamBase, Result, SampleRateConversionQuality, SessionId, SharingMode, Stereo,
+    Unspecified, Usage,
 };
 
 #[repr(transparent)]
 pub(crate) struct AudioStreamBuilderHandle(*mut ffi::oboe_AudioStreamBuilder);
+
+impl AudioStreamBuilderHandle {
+    pub(crate) fn open_stream(&mut self) -> Result<AudioStreamHandle> {
+        let mut stream = AudioStreamHandle::default();
+
+        wrap_status(unsafe {
+            ffi::oboe_AudioStreamBuilder_openStreamShared(&mut **self, stream.as_mut())
+        })
+        .map(|_| stream)
+    }
+}
 
 impl Default for AudioStreamBuilderHandle {
     fn default() -> Self {
@@ -466,20 +477,9 @@ impl<D: IsDirection, C: IsChannelCount, T: IsFormat> AudioStreamBuilder<D, C, T>
      * Create and open a synchronous (blocking) stream based on the current settings.
      */
     pub fn open_stream(self) -> Result<AudioStreamSync<D, (T, C)>> {
-        let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
-        let mut shared_ptr = MaybeUninit::<*mut c_void>::uninit();
         let mut raw = self.destructs();
 
-        let stream = wrap_status(unsafe {
-            ffi::oboe_AudioStreamBuilder_openStreamShared(
-                &mut *raw,
-                stream.as_mut_ptr(),
-                shared_ptr.as_mut_ptr(),
-            )
-        })
-        .map(|_| unsafe {
-            AudioStreamSync::wrap_raw(stream.assume_init(), shared_ptr.assume_init())
-        });
+        let stream = raw.open_stream().map(AudioStreamSync::wrap_handle);
 
         drop(raw);
 
@@ -603,20 +603,9 @@ impl<F: AudioInputCallback + Send> AudioStreamBuilderAsync<Input, F> {
      * Create and open an asynchronous (callback-driven) input stream based on the current settings.
      */
     pub fn open_stream(self) -> Result<AudioStreamAsync<Input, F>> {
-        let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
-        let mut shared_ptr = MaybeUninit::<*mut c_void>::uninit();
         let mut raw = self.destructs();
 
-        let stream = wrap_status(unsafe {
-            ffi::oboe_AudioStreamBuilder_openStreamShared(
-                &mut *raw,
-                stream.as_mut_ptr(),
-                shared_ptr.as_mut_ptr(),
-            )
-        })
-        .map(|_| unsafe {
-            AudioStreamAsync::wrap_raw(stream.assume_init(), shared_ptr.assume_init())
-        });
+        let stream = raw.open_stream().map(AudioStreamAsync::wrap_handle);
 
         drop(raw);
 
@@ -629,20 +618,9 @@ impl<F: AudioOutputCallback + Send> AudioStreamBuilderAsync<Output, F> {
      * Create and open an asynchronous (callback-driven) output stream based on the current settings.
      */
     pub fn open_stream(self) -> Result<AudioStreamAsync<Output, F>> {
-        let mut stream = MaybeUninit::<*mut ffi::oboe_AudioStream>::uninit();
-        let mut shared_ptr = MaybeUninit::<*mut c_void>::uninit();
         let mut raw = self.destructs();
 
-        let stream = wrap_status(unsafe {
-            ffi::oboe_AudioStreamBuilder_openStreamShared(
-                &mut *raw,
-                stream.as_mut_ptr(),
-                shared_ptr.as_mut_ptr(),
-            )
-        })
-        .map(|_| unsafe {
-            AudioStreamAsync::wrap_raw(stream.assume_init(), shared_ptr.assume_init())
-        });
+        let stream = raw.open_stream().map(AudioStreamAsync::wrap_handle);
 
         drop(raw);
 
