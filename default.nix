@@ -3,7 +3,7 @@ with pkgs;
 let
   androidComposition = androidenv.composeAndroidPackages {
     #toolsVersion = "25.2.5";
-    platformToolsVersion = "31.0.2";
+    platformToolsVersion = "33.0.3";
     buildToolsVersions = [ "30.0.3" ];
     #includeEmulator = true;
     #emulatorVersion = "27.2.0";
@@ -17,7 +17,8 @@ let
     #cmakeVersions = [ "3.6.4111459" ];
     includeNDK = true;
     #ndkVersion = "21.0.6113669";
-    ndkVersion = "21.3.6528147";
+    #ndkVersion = "21.3.6528147";
+    ndkVersion = "21.4.7075529";
     useGoogleAPIs = false;
     useGoogleTVAddOns = false;
     includeExtras = [
