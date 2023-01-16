@@ -6,7 +6,6 @@ use std::{
     marker::PhantomData,
     mem::{transmute, MaybeUninit},
     ops::{Deref, DerefMut},
-    ptr::null_mut,
 };
 
 use super::{
@@ -534,30 +533,43 @@ pub(crate) fn audio_stream_fmt<T: AudioStreamSafe>(
     '\n'.fmt(f)
 }
 
-struct AudioStreamHandle(*mut ffi::oboe_AudioStream, *mut c_void);
+pub(crate) struct AudioStreamHandle(ffi::oboe_AudioStreamShared);
 
-impl AudioStreamHandle {
-    fn new(raw: *mut ffi::oboe_AudioStream, shared_ptr: *mut c_void) -> Self {
-        Self(raw, shared_ptr)
+impl Clone for AudioStreamHandle {
+    fn clone(&self) -> Self {
+        // We free to clone shared pointers
+        let mut new = Self::default();
+
+        unsafe { ffi::oboe_AudioStreamShared_clone(&self.0, new.as_mut()) };
+
+        new
     }
+}
 
-    /// SAFETY: `self.0` and `self.1` must be valid pointers.
-    pub(crate) unsafe fn delete(&mut self) {
-        assert!(!self.0.is_null());
-        assert!(!self.1.is_null());
-
+impl Drop for AudioStreamHandle {
+    /// SAFETY: `self.0` must be valid pointers.
+    fn drop(&mut self) {
         // The error callback could be holding a shared_ptr, so don't delete AudioStream
         // directly, but only its shared_ptr.
-        ffi::oboe_AudioStream_deleteShared(self.1);
-
-        self.0 = null_mut();
-        self.1 = null_mut();
+        unsafe { ffi::oboe_AudioStreamShared_delete(&mut self.0 as *mut _) };
     }
 }
 
 impl Default for AudioStreamHandle {
     fn default() -> Self {
-        Self(null_mut(), null_mut())
+        Self(unsafe { MaybeUninit::zeroed().assume_init() })
+    }
+}
+
+impl AsRef<ffi::oboe_AudioStreamShared> for AudioStreamHandle {
+    fn as_ref(&self) -> &ffi::oboe_AudioStreamShared {
+        &self.0
+    }
+}
+
+impl AsMut<ffi::oboe_AudioStreamShared> for AudioStreamHandle {
+    fn as_mut(&mut self) -> &mut ffi::oboe_AudioStreamShared {
+        &mut self.0
     }
 }
 
@@ -565,13 +577,13 @@ impl Deref for AudioStreamHandle {
     type Target = ffi::oboe_AudioStream;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &(*self.0) }
+        unsafe { &*ffi::oboe_AudioStreamShared_deref(&self.0 as *const _ as *mut _) }
     }
 }
 
 impl DerefMut for AudioStreamHandle {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut (*self.0) }
+        unsafe { &mut *ffi::oboe_AudioStreamShared_deref(&mut self.0) }
     }
 }
 
@@ -638,13 +650,10 @@ impl<D, F> fmt::Debug for AudioStreamAsync<D, F> {
 }
 
 impl<D, F> AudioStreamAsync<D, F> {
-    // SAFETY: `raw` and `shared_ptr` must be valid.
-    pub(crate) unsafe fn wrap_raw(
-        raw: *mut ffi::oboe_AudioStream,
-        shared_ptr: *mut c_void,
-    ) -> Self {
+    // SAFETY: `raw` must be valid.
+    pub(crate) fn wrap_handle(raw: AudioStreamHandle) -> Self {
         Self {
-            raw: AudioStreamHandle(raw, shared_ptr),
+            raw,
             _phantom: PhantomData,
         }
     }
@@ -654,20 +663,17 @@ impl<D, F> Drop for AudioStreamAsync<D, F> {
     fn drop(&mut self) {
         // SAFETY: As long as the conditions on Self::wrap_raw are guaranteed on the creation of
         // self, this is safe.
-        unsafe {
-            let _ = self.close();
-            self.raw.delete();
-        }
+        let _ = self.close();
     }
 }
 
 impl<D, T> RawAudioStreamBase for AudioStreamAsync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { &*ffi::oboe_AudioStream_getBase(self.raw.0) }
+        unsafe { &*ffi::oboe_AudioStream_getBase(&*self.raw as *const _ as *mut _) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { &mut *ffi::oboe_AudioStream_getBase(self.raw.0) }
+        unsafe { &mut *ffi::oboe_AudioStream_getBase(&mut *self.raw as *mut _) }
     }
 }
 
@@ -700,13 +706,10 @@ impl<D, F> fmt::Debug for AudioStreamSync<D, F> {
 }
 
 impl<D, F> AudioStreamSync<D, F> {
-    // SAFETY: `raw`, `shared_ptr` must be valid, because they will be deleted on drop.
-    pub(crate) unsafe fn wrap_raw(
-        raw: *mut ffi::oboe_AudioStream,
-        shared_ptr: *mut c_void,
-    ) -> Self {
+    // SAFETY: `raw` must be valid.
+    pub(crate) fn wrap_handle(raw: AudioStreamHandle) -> Self {
         Self {
-            raw: AudioStreamHandle::new(raw, shared_ptr),
+            raw,
             _phantom: PhantomData,
         }
     }
@@ -716,20 +719,17 @@ impl<D, F> Drop for AudioStreamSync<D, F> {
     fn drop(&mut self) {
         // SAFETY: As long as the conditions on Self::wrap_raw are guaranteed on the creation of
         // self, this is safe.
-        unsafe {
-            let _ = self.close();
-            self.raw.delete();
-        }
+        let _ = self.close();
     }
 }
 
 impl<D, T> RawAudioStreamBase for AudioStreamSync<D, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { &*ffi::oboe_AudioStream_getBase(self.raw.0) }
+        unsafe { &*ffi::oboe_AudioStream_getBase(&*self.raw as *const _ as *mut _) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { &mut *ffi::oboe_AudioStream_getBase(self.raw.0) }
+        unsafe { &mut *ffi::oboe_AudioStream_getBase(&mut *self.raw as *mut _) }
     }
 }
 

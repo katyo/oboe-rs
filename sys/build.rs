@@ -160,6 +160,7 @@ impl Builder {
             .allowlist_type("oboe::Version")
             .allowlist_function("oboe::AudioStreamBuilder_.+")
             .allowlist_function("oboe::AudioStream_.+")
+            .allowlist_function("oboe::AudioStreamShared_.*")
             .allowlist_function("oboe::AudioStreamCallbackWrapper_.+")
             .allowlist_function("oboe::getSdkVersion")
             .blocklist_type("std::.*_ptr.*")

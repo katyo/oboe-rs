@@ -1,9 +1,17 @@
 #include "oboe/OboeExt.h"
 
 namespace oboe {
-  void AudioStream_deleteShared(void *shared_ptr) {
-    std::shared_ptr<AudioStream> *s = (std::shared_ptr<AudioStream> *)shared_ptr;
-    delete s;
+  void AudioStreamShared_clone(const AudioStreamShared *sharedStream,
+                               AudioStreamShared *newSharedStream) {
+    *newSharedStream = *sharedStream; // initialize with copy constructor
+  }
+
+  void AudioStreamShared_delete(AudioStreamShared *sharedStream) {
+    sharedStream->~shared_ptr(); // call destructor directly
+  }
+
+  AudioStream *AudioStreamShared_deref(AudioStreamShared *sharedStream) {
+    return sharedStream->get();
   }
 
   Result AudioStream_open(AudioStream *oboeStream) {
