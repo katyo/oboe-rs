@@ -46,7 +46,7 @@ namespace oboe {
     const ErrorCloseHandler _after_close;
   };
 
-  AudioStreamBuilder *AudioStreamBuilder_new();
+  void AudioStreamBuilder_create(AudioStreamBuilder *builder);
   void AudioStreamBuilder_delete(AudioStreamBuilder *builder);
   void AudioStreamBuilder_setCallback(AudioStreamBuilder *builder,
                                       void *context,

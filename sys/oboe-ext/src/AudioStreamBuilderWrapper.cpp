@@ -9,12 +9,12 @@ namespace oboe {
     builder->~AudioStreamBuilder();
   }*/
 
-  AudioStreamBuilder *AudioStreamBuilder_new() {
-    return new AudioStreamBuilder();
+  void AudioStreamBuilder_create(AudioStreamBuilder *builder) {
+    new(builder) AudioStreamBuilder(); // call constructor on preallocated data buffer
   }
 
   void AudioStreamBuilder_delete(AudioStreamBuilder *builder) {
-    delete builder;
+    builder->~AudioStreamBuilder(); // call destructor directly to avoid free data
   }
 
   AudioApi AudioStreamBuilder_getAudioApi(const AudioStreamBuilder *builder) {
