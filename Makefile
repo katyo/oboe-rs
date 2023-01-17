@@ -20,3 +20,6 @@ bindgen-$(1):
 endef
 
 $(foreach target,$(ANDROID_TARGETS),$(eval $(call bindgen-rules,$(target))))
+
+keygen:
+	@keytool -genkey -dname "cn=Illumium, ou=RnD, o=illumium.org, c=US" -v -keystore demo/release.keystore -alias demo -keyalg RSA -keysize 2048 -validity 20000
