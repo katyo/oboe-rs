@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies.oboe]
 path = ".."
-version = "0.4.6"
+version = "0.5.0"
 #features = ["generate-bindings"]
 features = ["java-interface"]
 #features = ["generate-bindings", "java-interface"]
