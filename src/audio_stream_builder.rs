@@ -3,7 +3,7 @@ use oboe_sys as ffi;
 use std::{
     fmt,
     marker::PhantomData,
-    mem::ManuallyDrop,
+    mem::{ManuallyDrop, MaybeUninit},
     ops::{Deref, DerefMut},
 };
 
@@ -18,7 +18,7 @@ use super::{
 };
 
 #[repr(transparent)]
-pub(crate) struct AudioStreamBuilderHandle(*mut ffi::oboe_AudioStreamBuilder);
+pub(crate) struct AudioStreamBuilderHandle(ffi::oboe_AudioStreamBuilder);
 
 impl AudioStreamBuilderHandle {
     pub(crate) fn open_stream(&mut self) -> Result<AudioStreamHandle> {
@@ -33,13 +33,18 @@ impl AudioStreamBuilderHandle {
 
 impl Default for AudioStreamBuilderHandle {
     fn default() -> Self {
-        Self(unsafe { ffi::oboe_AudioStreamBuilder_new() })
+        let mut raw = MaybeUninit::zeroed();
+
+        Self(unsafe {
+            ffi::oboe_AudioStreamBuilder_create(raw.as_mut_ptr());
+            raw.assume_init()
+        })
     }
 }
 
 impl Drop for AudioStreamBuilderHandle {
     fn drop(&mut self) {
-        unsafe { ffi::oboe_AudioStreamBuilder_delete(self.0) }
+        unsafe { ffi::oboe_AudioStreamBuilder_delete(&mut **self) }
     }
 }
 
@@ -47,13 +52,13 @@ impl Deref for AudioStreamBuilderHandle {
     type Target = ffi::oboe_AudioStreamBuilder;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &(*self.0) }
+        &self.0
     }
 }
 
 impl DerefMut for AudioStreamBuilderHandle {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut (*self.0) }
+        &mut self.0
     }
 }
 
@@ -83,11 +88,11 @@ impl<D, C, T> fmt::Debug for AudioStreamBuilder<D, C, T> {
 
 impl<D, C, T> RawAudioStreamBase for AudioStreamBuilder<D, C, T> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { &*ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
+        unsafe { &*ffi::oboe_AudioStreamBuilder_getBase(&**self.raw as *const _ as *mut _) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { &mut *ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
+        unsafe { &mut *ffi::oboe_AudioStreamBuilder_getBase(&mut **self.raw) }
     }
 }
 
@@ -578,11 +583,11 @@ impl<D, F> fmt::Debug for AudioStreamBuilderAsync<D, F> {
 
 impl<D, F> RawAudioStreamBase for AudioStreamBuilderAsync<D, F> {
     fn _raw_base(&self) -> &ffi::oboe_AudioStreamBase {
-        unsafe { &*ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
+        unsafe { &*ffi::oboe_AudioStreamBuilder_getBase(&**self.raw as *const _ as *mut _) }
     }
 
     fn _raw_base_mut(&mut self) -> &mut ffi::oboe_AudioStreamBase {
-        unsafe { &mut *ffi::oboe_AudioStreamBuilder_getBase(self.raw.0) }
+        unsafe { &mut *ffi::oboe_AudioStreamBuilder_getBase(&mut **self.raw) }
     }
 }
 
