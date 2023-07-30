@@ -16,7 +16,7 @@ maintenance = { status = "experimental" }
 
 [dependencies]
 num-traits = "0.2"
-num-derive = "0.3"
+num-derive = "0.4.0"
 
 [dependencies.oboe-sys]
 version = "0.5.0"
