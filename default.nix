@@ -3,8 +3,8 @@ with pkgs;
 let
   androidComposition = androidenv.composeAndroidPackages {
     #toolsVersion = "25.2.5";
-    platformToolsVersion = "33.0.3";
-    buildToolsVersions = [ "30.0.3" ];
+    #platformToolsVersion = "34.0.1";
+    #buildToolsVersions = [ "33.0.2" ];
     #includeEmulator = true;
     #emulatorVersion = "27.2.0";
     platformVersions = [ "16" "28" ];
@@ -16,11 +16,10 @@ let
     #lldbVersions = [ "2.0.2558144" ];
     #cmakeVersions = [ "3.6.4111459" ];
     includeNDK = true;
-    #ndkVersion = "21.0.6113669";
-    #ndkVersion = "21.3.6528147";
-    ndkVersion = "21.4.7075529";
-    useGoogleAPIs = false;
-    useGoogleTVAddOns = false;
+    #ndkVersions = [ "21.4.7075529" ];
+    ndkVersions = [ "25.2.9519653" ];
+    #useGoogleAPIs = false;
+    #useGoogleTVAddOns = false;
     includeExtras = [
       #"extras;google;gcm"
     ];
@@ -31,11 +30,11 @@ let
   ndk_path = "${ndk_root}/toolchains/llvm/prebuilt/linux-x86_64/bin";
 in mkShell rec {
   # cargo apk
-  ANDROID_SDK_ROOT = "${sdk_root}";
+  #ANDROID_SDK_ROOT = "${sdk_root}";
   ANDROID_NDK_ROOT = "${ndk_root}";
 
   # cargo ndk 
-  ANDROID_SDK_HOME = "${sdk_root}";
+  ANDROID_HOME = "${sdk_root}";
 
   # llvm-config for libclang
   ##PATH = "${ndk_path}:${builtins.getEnv "PATH"}";
@@ -44,8 +43,8 @@ in mkShell rec {
   '';
 
   # reduce resources usage
-  DART_VM_OPTIONS = "--old_gen_heap_size=256 --observe";
-  GRADLE_OPTS = "-Xmx64m -Dorg.gradle.jvmargs='-Xmx256m -XX:MaxPermSize=64m'";
+  #DART_VM_OPTIONS = "--old_gen_heap_size=256 --observe";
+  #GRADLE_OPTS = "-Xmx64m -Dorg.gradle.jvmargs='-Xmx256m -XX:MaxPermSize=64m'";
 
   buildInputs = [ pkgconfig openssl zlib ncurses5 cmake libssh2 libgit2 ];
 }
