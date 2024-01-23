@@ -57,15 +57,12 @@ jobs:
           java-version: 17
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-      - name: Setup Android SDK packages
-        uses: maxim-lobanov/setup-android-tools@v1
-        with:
-          packages: |
-            build-tools;${{ env.SDK_BUILD_TOOLS_VERSION }}
-            cmdline-tools;${{ env.SDK_CMDLINE_TOOLS_VERSION }}
-            ndk;${{ env.NDK_VERSION }}
-            platforms;android-21
-          cache: true
+      - name: Set Up Android tools
+        run: |
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "build-tools;${{ env.SDK_BUILD_TOOLS_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "cmdline-tools;${{ env.SDK_CMDLINE_TOOLS_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "ndk;${{ env.NDK_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "platforms;android-21"
       - name: Config Android NDK
         env:
           TRIPLE: x86_64-linux-android
@@ -118,17 +115,12 @@ jobs:
           java-version: 17
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-      - run: |
-          echo "NDK_VERSION=25.2.9519653" >> $GITHUB_ENV
-      - name: Setup Android SDK packages
-        uses: maxim-lobanov/setup-android-tools@v1
-        with:
-          packages: |
-            build-tools;${{ env.SDK_BUILD_TOOLS_VERSION }}
-            cmdline-tools;${{ env.SDK_CMDLINE_TOOLS_VERSION }}
-            ndk;${{ env.NDK_VERSION }}
-            platforms;android-21
-          cache: true
+      - name: Set Up Android tools
+        run: |
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "build-tools;${{ env.SDK_BUILD_TOOLS_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "cmdline-tools;${{ env.SDK_CMDLINE_TOOLS_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "ndk;${{ env.NDK_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "platforms;android-21"
       - name: Config Android NDK
         run: |
           echo "$ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
@@ -234,15 +226,12 @@ jobs:
           java-version: 17
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-      - name: Setup Android SDK packages
-        uses: maxim-lobanov/setup-android-tools@v1
-        with:
-          packages: |
-            build-tools;${{ env.SDK_BUILD_TOOLS_VERSION }}
-            cmdline-tools;${{ env.SDK_CMDLINE_TOOLS_VERSION }}
-            ndk-bundle
-            platforms;android-21
-          cache: true
+      - name: Set Up Android tools
+        run: |
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "build-tools;${{ env.SDK_BUILD_TOOLS_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "cmdline-tools;${{ env.SDK_CMDLINE_TOOLS_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "ndk;${{ env.NDK_VERSION }}"
+          ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --install "platforms;android-21"
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v1
         with:
