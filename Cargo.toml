@@ -25,6 +25,7 @@ path = "sys"
 [dependencies.ndk]
 version = "0.8"
 optional = true
+default-features = false
 
 [dependencies.ndk-context]
 version = "0.1"
