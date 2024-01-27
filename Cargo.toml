@@ -1,38 +1,66 @@
-[package]
-name = "oboe"
-version = "0.5.0"
-description = "Safe interface for oboe an android library for low latency audio IO"
-categories = ["api-bindings", "multimedia::audio"]
+[workspace]
+members = ["sys", "demo"]
+resolver = "2"
+
+[workspace.package]
+version = "0.6.0"
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
 authors = ["K. <kayo@illumium.org>"]
 license = "Apache-2.0"
-readme = "README.md"
 repository = "https://github.com/katyo/oboe-rs"
-edition = "2018"
+homepage = "https://github.com/katyo/oboe-rs"
+edition = "2021"
+
+[workspace.dependencies]
+num-traits = "0.2"
+num-derive = "0.4"
+atomic_float = "0.1"
+ndk-context = "0.1"
+ndk-glue = "0.7"
+jni = "0.21"
+cc = "1"
+bindgen = "0.69"
+fetch_unroll = "0.3"
+glutin = "0.31"
+log = "0.4"
+android_logger = "0.13"
+oboe-sys.path = "sys"
+oboe.path = ""
+
+[workspace.dependencies.ndk]
+version = "0.8"
+default-features = false
+
+[package]
+name = "oboe"
+version.workspace = true
+description = "Safe interface for oboe an android library for low latency audio IO"
+categories = ["api-bindings", "multimedia::audio"]
+keywords.workspace = true
+authors.workspace = true
+license.workspace = true
+readme = "README.md"
+repository.workspace = true
+homepage.workspace = true
+edition.workspace = true
 include = ["/src/**/*.rs", "/README.md"]
 
-[badges]
-maintenance = { status = "experimental" }
-
 [dependencies]
-num-traits = "0.2"
-num-derive = "0.4.0"
-
-[dependencies.oboe-sys]
-version = "0.5.0"
-path = "sys"
+num-traits.workspace = true
+num-derive.workspace = true
+oboe-sys.workspace = true
 
 [dependencies.ndk]
-version = "0.8"
+workspace = true
 optional = true
 default-features = false
 
 [dependencies.ndk-context]
-version = "0.1"
+workspace = true
 optional = true
 
 [dependencies.jni]
-version = "0.20"
+workspace = true
 optional = true
 
 [features]
@@ -51,9 +79,6 @@ targets = [
     "i686-linux-android",
     "x86_64-linux-android",
 ]
-
-[workspace]
-members = ["sys", "demo"]
 
 [profile.release]
 opt-level = 3
