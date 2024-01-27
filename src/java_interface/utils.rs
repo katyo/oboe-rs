@@ -92,11 +92,11 @@ pub fn call_method_no_args_ret_char_sequence(
     .map(String::from)
 }
 
-pub fn call_method_string_arg_ret_bool<S: AsRef<str>>(
+pub fn call_method_string_arg_ret_bool(
     env: &JNIEnv<'_>,
     subject: JObject,
     name: &str,
-    arg: S,
+    arg: impl AsRef<str>,
 ) -> JResult<bool> {
     env.call_method(
         subject,
@@ -107,12 +107,12 @@ pub fn call_method_string_arg_ret_bool<S: AsRef<str>>(
     .z()
 }
 
-pub fn call_method_string_arg_ret_string<'a: 'b, 'b, S: AsRef<str>>(
-    env: &'b JNIEnv<'a>,
+pub fn call_method_string_arg_ret_string<'a: 'b, 'b>(
+    env: &JNIEnv<'a>,
     subject: JObject<'a>,
     name: &str,
-    arg: S,
-) -> JResult<JavaStr<'a, 'b>> {
+    arg: impl AsRef<str>,
+) -> JResult<JavaStr<'a, 'b, 'a>> {
     env.get_string(
         env.call_method(
             subject,
@@ -166,7 +166,7 @@ pub fn get_property<'a: 'b, 'b>(
     env: &'b JNIEnv<'a>,
     subject: JObject<'a>,
     name: &str,
-) -> JResult<JavaStr<'a, 'b>> {
+) -> JResult<JavaStr<'a, 'b, 'a>> {
     call_method_string_arg_ret_string(env, subject, "getProperty", name)
 }
 

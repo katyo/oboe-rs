@@ -1,17 +1,18 @@
 [package]
 name = "oboe-demo"
 description = "Simple sine-wave playing demo"
-version = "0.4.5"
-authors = ["K. <kayo@illumium.org>"]
-edition = "2018"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
 publish = false
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies.oboe]
-path = ".."
-version = "0.5.0"
+workspace = true
 #features = ["generate-bindings"]
 features = ["java-interface"]
 #features = ["generate-bindings", "java-interface"]
@@ -19,20 +20,20 @@ features = ["java-interface"]
 optional = true
 
 [dependencies.atomic_float]
-version = "0.1.0"
+workspace = true
 
 [dependencies.ndk-glue]
-version = "0.7.0"
+workspace = true
 features = ["logger"]
 
 [dependencies.android_logger]
-version = "0.10"
+workspace = true
 
 [dependencies.log]
-version = "0.4"
+workspace = true
 
 [dependencies.glutin]
-version = "0.29"
+workspace = true
 
 [features]
 default = ["audio"]

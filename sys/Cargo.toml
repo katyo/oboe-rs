@@ -1,29 +1,27 @@
 [package]
 name = "oboe-sys"
-version = "0.5.0"
+version.workspace = true
 description = "Unsafe bindings for oboe an android library for low latency audio IO"
 categories = ["external-ffi-bindings", "multimedia::audio"]
-keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
-authors = ["K. <kayo@illumium.org>"]
-license = "Apache-2.0"
+keywords.workspace = true
+authors.workspace = true
+license.workspace = true
 readme = "README.md"
-repository = "https://github.com/katyo/oboe-rs"
-edition = "2018"
+repository.workspace = true
+homepage.workspace = true
+edition.workspace = true
 include = ["/build.rs", "/src/*.rs", "/oboe/include", "/oboe/src", "/oboe-ext/include", "/oboe-ext/src", "/README.md"]
 
-[badges]
-maintenance = { status = "experimental" }
-
 [build-dependencies.fetch_unroll]
-version = "0.3"
+workspace = true
 optional = true
 
 [build-dependencies.cc]
-version = "1.0"
+workspace = true
 features = ["parallel"]
 
 [build-dependencies.bindgen]
-version = "0.63"
+workspace = true
 optional = true
 
 [features]
