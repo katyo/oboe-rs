@@ -4,10 +4,10 @@ let
   androidComposition = androidenv.composeAndroidPackages {
     #toolsVersion = "25.2.5";
     #platformToolsVersion = "34.0.1";
-    #buildToolsVersions = [ "33.0.2" ];
+    buildToolsVersions = [ "34.0.0" "30.0.3" ];
     #includeEmulator = true;
     #emulatorVersion = "27.2.0";
-    platformVersions = [ "16" "28" ];
+    platformVersions = [ "16" "28" "33" "34" ];
     #includeSources = false;
     #includeDocs = false;
     includeSystemImages = false;
@@ -32,6 +32,7 @@ in mkShell rec {
   # cargo apk
   #ANDROID_SDK_ROOT = "${sdk_root}";
   ANDROID_NDK_ROOT = "${ndk_root}";
+  NDK_HOME = "${ndk_root}";
 
   # cargo ndk 
   ANDROID_HOME = "${sdk_root}";
@@ -39,12 +40,14 @@ in mkShell rec {
   # llvm-config for libclang
   ##PATH = "${ndk_path}:${builtins.getEnv "PATH"}";
   shellHook = ''
-    export PATH="${ndk_path}:$PATH";
+    buildToolsVersion=$(ls -1 ${sdk_root}/build-tools | head -n1)
+    export GRADLE_OPTS="-Dorg.gradle.project.android.aapt2FromMavenOverride=${sdk_root}/build-tools/$buildToolsVersion/aapt2"
+    export PATH="${ndk_path}:${androidsdk}/bin:$PATH";
   '';
 
   # reduce resources usage
   #DART_VM_OPTIONS = "--old_gen_heap_size=256 --observe";
   #GRADLE_OPTS = "-Xmx64m -Dorg.gradle.jvmargs='-Xmx256m -XX:MaxPermSize=64m'";
 
-  buildInputs = [ pkgconfig openssl zlib ncurses5 cmake libssh2 libgit2 ];
+  buildInputs = [ pkg-config openssl zlib ncurses5 cmake libssh2 libgit2 ];
 }
