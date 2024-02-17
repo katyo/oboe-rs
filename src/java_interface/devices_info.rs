@@ -26,7 +26,7 @@ impl AudioDeviceInfo {
                 .i()?;
 
             if sdk_version >= 23 {
-                try_request_devices_info(env, context, direction)
+                try_request_devices_info(env, &context, direction)
             } else {
                 Err(jni::errors::Error::MethodNotFound {
                     name: "".into(),
@@ -38,41 +38,50 @@ impl AudioDeviceInfo {
     }
 }
 
-fn try_request_devices_info(
-    env: &JNIEnv<'_>,
-    context: JObject,
+fn try_request_devices_info<'j>(
+    env: &mut JNIEnv<'j>,
+    context: &JObject<'j>,
     direction: AudioDeviceDirection,
 ) -> JResult<Vec<AudioDeviceInfo>> {
     let audio_manager = get_system_service(env, context, Context::AUDIO_SERVICE)?;
 
-    let devices = env.auto_local(get_devices(env, audio_manager, direction as i32)?);
+    let devices = get_devices(env, &audio_manager, direction as i32)?;
 
-    let raw_devices = devices.as_obj().into_raw();
-
-    let length = env.get_array_length(raw_devices)?;
+    let length = env.get_array_length(&devices)?;
 
     (0..length)
         .map(|index| {
-            let device = env.get_object_array_element(raw_devices, index)?;
+            let device = env.get_object_array_element(&devices, index)?;
+            let id = call_method_no_args_ret_int(env, &device, "getId")?;
+            let address = call_method_no_args_ret_string(env, &device, "getAddress")?;
+            let address = String::from(env.get_string(&address)?);
+            let product_name =
+                call_method_no_args_ret_char_sequence(env, &device, "getProductName")?;
+            let product_name = String::from(env.get_string(&product_name)?);
+            let device_type =
+                FromPrimitive::from_i32(call_method_no_args_ret_int(env, &device, "getType")?)
+                    .unwrap_or(AudioDeviceType::Unsupported);
+            let direction = AudioDeviceDirection::new(
+                call_method_no_args_ret_bool(env, &device, "isSource")?,
+                call_method_no_args_ret_bool(env, &device, "isSink")?,
+            );
+            let channel_counts =
+                call_method_no_args_ret_int_array(env, &device, "getChannelCounts")?;
+            let sample_rates = call_method_no_args_ret_int_array(env, &device, "getSampleRates")?;
+            let formats = call_method_no_args_ret_int_array(env, &device, "getEncodings")?
+                .into_iter()
+                .filter_map(AudioFormat::from_encoding)
+                .collect::<Vec<_>>();
 
             Ok(AudioDeviceInfo {
-                id: call_method_no_args_ret_int(env, device, "getId")?,
-                address: call_method_no_args_ret_string(env, device, "getAddress")?,
-                product_name: call_method_no_args_ret_char_sequence(env, device, "getProductName")?,
-                device_type: FromPrimitive::from_i32(call_method_no_args_ret_int(
-                    env, device, "getType",
-                )?)
-                .unwrap_or(AudioDeviceType::Unsupported),
-                direction: AudioDeviceDirection::new(
-                    call_method_no_args_ret_bool(env, device, "isSource")?,
-                    call_method_no_args_ret_bool(env, device, "isSink")?,
-                ),
-                channel_counts: call_method_no_args_ret_int_array(env, device, "getChannelCounts")?,
-                sample_rates: call_method_no_args_ret_int_array(env, device, "getSampleRates")?,
-                formats: call_method_no_args_ret_int_array(env, device, "getEncodings")?
-                    .into_iter()
-                    .filter_map(AudioFormat::from_encoding)
-                    .collect::<Vec<_>>(),
+                id,
+                address,
+                product_name,
+                device_type,
+                direction,
+                channel_counts,
+                sample_rates,
+                formats,
             })
         })
         .collect::<Result<Vec<_>, _>>()
