@@ -6,5 +6,3 @@ mod utils;
 
 pub use self::audio_features::*;
 pub use self::definitions::*;
-pub use self::devices_info::*;
-pub use self::stream_defaults::*;

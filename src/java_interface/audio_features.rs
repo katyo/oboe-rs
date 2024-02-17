@@ -40,14 +40,18 @@ impl AudioFeature {
         let context = get_context();
 
         with_attached(context, |env, activity| {
-            try_check_system_feature(env, activity, (*self).into())
+            try_check_system_feature(env, &activity, (*self).into())
         })
         .map_err(|error| error.to_string())
     }
 }
 
-fn try_check_system_feature(env: &JNIEnv<'_>, activity: JObject, feature: &str) -> JResult<bool> {
+fn try_check_system_feature<'j>(
+    env: &mut JNIEnv<'j>,
+    activity: &JObject<'j>,
+    feature: &str,
+) -> JResult<bool> {
     let package_manager = get_package_manager(env, activity)?;
 
-    has_system_feature(env, package_manager, feature)
+    has_system_feature(env, &package_manager, feature)
 }

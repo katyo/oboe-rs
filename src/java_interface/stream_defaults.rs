@@ -26,7 +26,7 @@ impl DefaultStreamValues {
                     sig: "".into(),
                 })
             } else if sdk_version < 26 {
-                try_request_default_stream_values(env, context).map(Some)
+                try_request_default_stream_values(env, &context).map(Some)
             } else {
                 // not necessary
                 Ok(None)
@@ -49,23 +49,25 @@ impl DefaultStreamValues {
     }
 }
 
-fn try_request_default_stream_values(
-    env: &JNIEnv<'_>,
-    context: JObject,
+fn try_request_default_stream_values<'j>(
+    env: &mut JNIEnv<'j>,
+    context: &JObject<'j>,
 ) -> JResult<(Option<i32>, Option<i32>)> {
     let audio_manager = get_system_service(env, context, Context::AUDIO_SERVICE)?;
 
     let sample_rate = get_property(
         env,
-        audio_manager,
+        &audio_manager,
         AudioManager::PROPERTY_OUTPUT_SAMPLE_RATE,
     )?;
+    let sample_rate = env.get_string(&sample_rate)?;
 
     let frames_per_burst = get_property(
         env,
-        audio_manager,
+        &audio_manager,
         AudioManager::PROPERTY_OUTPUT_FRAMES_PER_BUFFER,
     )?;
+    let frames_per_burst = env.get_string(&frames_per_burst)?;
 
     Ok((
         (*sample_rate).to_str().ok().and_then(|s| s.parse().ok()),
