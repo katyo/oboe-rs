@@ -8,55 +8,86 @@ use std::{
 use oboe::{
     AudioDeviceDirection, AudioDeviceInfo, AudioFeature, AudioOutputCallback, AudioOutputStream,
     AudioOutputStreamSafe, AudioStream, AudioStreamAsync, AudioStreamBase, AudioStreamBuilder,
-    DataCallbackResult, DefaultStreamValues, Mono, Output, PerformanceMode, SharingMode, Stereo,
+    AudioStreamSafe, DataCallbackResult, DefaultStreamValues, Mono, Output, PerformanceMode,
+    Result, SharingMode, Stereo, StreamState,
 };
+
+pub enum GenState {
+    Started,
+    Paused,
+    Stopped,
+}
 
 /// Sine-wave generator stream
 #[derive(Default)]
 pub struct SineGen {
     stream: Option<AudioStreamAsync<Output, SineWave<f32, Mono>>>,
+    param: Arc<SineParam>,
+}
+
+impl core::ops::Deref for SineGen {
+    type Target = SineParam;
+
+    fn deref(&self) -> &Self::Target {
+        &self.param
+    }
 }
 
 impl SineGen {
-    /// Create and start audio stream
-    pub fn try_start(&mut self) {
-        if self.stream.is_none() {
-            let param = Arc::new(SineParam::default());
+    pub fn state(&self) -> GenState {
+        if let Some(stream) = &self.stream {
+            if matches!(stream.get_state(), StreamState::Paused) {
+                GenState::Paused
+            } else {
+                GenState::Started
+            }
+        } else {
+            GenState::Stopped
+        }
+    }
 
+    /// Create and start audio stream
+    pub fn start(&mut self) -> Result<()> {
+        if let Some(stream) = &mut self.stream {
+            stream.start()?;
+        } else {
             let mut stream = AudioStreamBuilder::default()
                 .set_performance_mode(PerformanceMode::LowLatency)
                 .set_sharing_mode(SharingMode::Shared)
                 .set_format::<f32>()
                 .set_channel_count::<Mono>()
-                .set_callback(SineWave::<f32, Mono>::new(&param))
-                .open_stream()
-                .unwrap();
+                .set_callback(SineWave::<f32, Mono>::new(&self.param))
+                .open_stream()?;
 
             log::debug!("start stream: {:?}", stream);
 
-            param.set_sample_rate(stream.get_sample_rate() as _);
+            self.param.set_sample_rate(stream.get_sample_rate() as _);
 
-            stream.start().unwrap();
+            stream.start()?;
 
             self.stream = Some(stream);
         }
+
+        Ok(())
     }
 
     /// Pause audio stream
-    pub fn try_pause(&mut self) {
+    pub fn pause(&mut self) -> Result<()> {
         if let Some(stream) = &mut self.stream {
             log::debug!("pause stream: {:?}", stream);
-            stream.pause().unwrap();
+            stream.pause()?;
         }
+        Ok(())
     }
 
     /// Stop and remove audio stream
-    pub fn try_stop(&mut self) {
+    pub fn stop(&mut self) -> Result<()> {
         if let Some(stream) = &mut self.stream {
             log::debug!("stop stream: {:?}", stream);
-            stream.stop().unwrap();
+            stream.stop()?;
             self.stream = None;
         }
+        Ok(())
     }
 }
 
@@ -79,26 +110,38 @@ impl Default for SineParam {
 }
 
 impl SineParam {
-    fn set_sample_rate(&self, sample_rate: f32) {
+    pub fn sample_rate(&self) -> f32 {
+        self.sample_rate.load(Ordering::SeqCst)
+    }
+
+    pub fn set_sample_rate(&self, sample_rate: f32) {
         let frequency = self.frequency.load(Ordering::Acquire);
         let delta = frequency * 2.0 * PI / sample_rate;
 
         self.delta.store(delta, Ordering::Release);
-        self.sample_rate.store(sample_rate, Ordering::Relaxed);
+        self.sample_rate.store(sample_rate, Ordering::SeqCst);
 
         println!("Prepare sine wave generator: samplerate={sample_rate}, time delta={delta}");
     }
 
-    fn set_frequency(&self, frequency: f32) {
-        let sample_rate = self.sample_rate.load(Ordering::Relaxed);
-        let delta = frequency * 2.0 * PI / sample_rate;
-
-        self.delta.store(delta, Ordering::Relaxed);
-        self.frequency.store(frequency, Ordering::Relaxed);
+    pub fn frequency(&self) -> f32 {
+        self.frequency.load(Ordering::SeqCst)
     }
 
-    fn set_gain(&self, gain: f32) {
-        self.gain.store(gain, Ordering::Relaxed);
+    pub fn set_frequency(&self, frequency: f32) {
+        let sample_rate = self.sample_rate.load(Ordering::SeqCst);
+        let delta = frequency * 2.0 * PI / sample_rate;
+
+        self.delta.store(delta, Ordering::SeqCst);
+        self.frequency.store(frequency, Ordering::SeqCst);
+    }
+
+    pub fn gain(&self) -> f32 {
+        self.gain.load(Ordering::SeqCst)
+    }
+
+    pub fn set_gain(&self, gain: f32) {
+        self.gain.store(gain, Ordering::SeqCst);
     }
 }
 
@@ -175,7 +218,7 @@ impl AudioOutputCallback for SineWave<f32, Stereo> {
 }
 
 /// Print device's audio info
-pub fn audio_probe() {
+pub fn print_info() {
     if let Err(error) = DefaultStreamValues::init() {
         eprintln!("Unable to init default stream values due to: {error}");
     }

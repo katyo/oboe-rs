@@ -9,74 +9,50 @@ homepage.workspace = true
 publish = false
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+#[[bin]]
+#name = "oboe-demo-desktop"
+#path = "gen/bin/desktop.rs"
+
+[package.metadata.cargo-android]
+app-dependencies = [
+    "com.google.android.material:material:1.11.0",
+]
+project-dependencies = [ "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22" ]
+app-plugins = [ "org.jetbrains.kotlin.android" ]
+app-permissions = [
+  # "android.permission.WRITE_EXTERNAL_STORAGE",
+  "android.permission.RECORD_AUDIO",
+]
+app-features = [
+  "android.hardware.audio.output",
+  "android.hardware.microphone",
+  "android.hardware.audio.low_latency",
+]
+app-theme-parent = "Theme.MaterialComponents.DayNight.DarkActionBar"
+
+[dependencies]
+log.workspace = true
+atomic_float.workspace = true
+android_logger.workspace = true
 
 [dependencies.oboe]
 workspace = true
-#features = ["generate-bindings"]
-features = ["java-interface"]
-#features = ["generate-bindings", "java-interface"]
-#features = ["java-interface"]
-optional = true
+features = [
+  #"generate-bindings",
+  "java-interface",
+  "shared-stdcxx",
+]
 
-[dependencies.atomic_float]
+[dependencies.egui-winit]
 workspace = true
 
-[dependencies.ndk-glue]
+[dependencies.eframe]
 workspace = true
-features = ["logger"]
-
-[dependencies.android_logger]
-workspace = true
-
-[dependencies.log]
-workspace = true
-
-[dependencies.glutin]
-workspace = true
+features = ["wgpu", "default_fonts"]
 
 [features]
-default = ["audio"]
-audio = ["oboe"]
-fetch-prebuilt-oboe = ["oboe/fetch-prebuilt"]
-shared-oboe = ["oboe/shared-link"]
-shared-stdcxx = ["oboe/shared-stdcxx"]
-
-[package.metadata.android]
-android_version = 28
-target_sdk_version = 28
-min_sdk_version = 16
-build_targets = [ "armv7-linux-androideabi", "aarch64-linux-android", "i686-linux-android", "x86_64-linux-android" ]
-#build_targets = ["aarch64-linux-android"]
-#build_targets = ["armv7-linux-androideabi"]
-#build_targets = ["i686-linux-android"]
-#build_targets = ["x86_64-linux-android"]
-package_name = "org.illumium.rust-oboe-demo"
-label = "Android oboe demo"
-#res = "res"
-#icon = "@mipmap/ic_launcher"
-fullscreen = false
-opengles_version_major = 2
-opengles_version_minor = 0
-
-[[package.metadata.android.feature]]
-name = "android.hardware.audio.output"
-required = false
-
-[[package.metadata.android.feature]]
-name = "android.hardware.microphone"
-required = false
-
-[[package.metadata.android.feature]]
-name = "android.hardware.audio.low_latency"
-required = false
-
-[[package.metadata.android.permission]]
-name = "android.permission.WRITE_EXTERNAL_STORAGE"
-
-[[package.metadata.android.permission]]
-name = "android.permission.RECORD_AUDIO"
-
-[package.metadata.android.signing.release]
-path = "release.keystore"
-keystore_password = "android"
+default = ["android-native-activity"]
+android-native-activity = ["eframe/android-native-activity", "egui-winit/android-native-activity"]
+android-game-activity = ["eframe/android-native-activity", "egui-winit/android-game-activity"]

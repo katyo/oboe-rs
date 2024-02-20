@@ -1,0 +1,5 @@
+[app]
+name = "oboe-demo"
+stylized-name = "Oboe Demo"
+domain = "illumium.org"
+template-pack = "egui"
