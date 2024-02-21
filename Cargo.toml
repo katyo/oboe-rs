@@ -89,7 +89,8 @@ targets = [
 ]
 
 [profile.release]
-opt-level = 3
+opt-level = 'z'
+strip = true
 debug = false
 rpath = false
 lto = true
