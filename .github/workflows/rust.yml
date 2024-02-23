@@ -142,6 +142,12 @@ jobs:
             i686-linux-android)      printf x86;;
             x86_64-linux-android)    printf x86_64;;
           esac)" >> $GITHUB_OUTPUT
+          echo "android-arch=$(case "${{ matrix.target }}" in
+            armv7-linux-androideabi) printf arm;;
+            aarch64-linux-android)   printf arm64;;
+            i686-linux-android)      printf x86;;
+            x86_64-linux-android)    printf x86_64;;
+          esac)" >> $GITHUB_OUTPUT
           if [[ "${{ matrix.target }}" =~ "64" ]]; then
             echo "android-api=21" >> $GITHUB_OUTPUT
           else
@@ -167,7 +173,7 @@ jobs:
         if: matrix.rust == 'stable' && matrix.profile == 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: bindings-${{ matrix.target }}
+          name: bindings-${{ steps.config.outputs.android-arch }}
           path: bindings
           overwrite: true
       - name: Archive library
@@ -177,7 +183,7 @@ jobs:
         if: matrix.rust == 'stable'
         uses: actions/upload-artifact@v4
         with:
-          name: library-${{ matrix.target }}-${{ matrix.profile }}
+          name: library-${{ steps.config.outputs.android-arch }}-${{ matrix.profile }}
           path: liboboe-ext_${{ matrix.target }}_${{ matrix.profile }}.tar.gz
           overwrite: true
 
