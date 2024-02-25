@@ -24,8 +24,14 @@ fetch_unroll = "0.3"
 glutin = "0.31"
 log = "0.4"
 android_logger = "0.13"
-oboe-sys.path = "sys"
-oboe.path = ""
+
+[workspace.dependencies.oboe-sys]
+version = "0.6"
+path = "sys"
+
+[workspace.dependencies.oboe]
+version = "0.6"
+path = ""
 
 [workspace.dependencies.egui-winit]
 version = "0.26"
