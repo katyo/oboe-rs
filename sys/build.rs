@@ -212,6 +212,7 @@ impl Builder {
         let src_files = &[
             "aaudio/AAudioLoader.cpp",
             "aaudio/AudioStreamAAudio.cpp",
+            "common/AdpfWrapper.cpp",
             "common/AudioSourceCaller.cpp",
             "common/AudioStream.cpp",
             "common/AudioStreamBuilder.cpp",
