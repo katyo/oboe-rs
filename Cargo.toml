@@ -3,7 +3,7 @@ members = ["sys", "demo"]
 resolver = "2"
 
 [workspace.package]
-version = "0.6.0"
+version = "0.6.1"
 keywords = ["oboe", "android", "audio", "aaudio", "opensles"]
 authors = ["K. <kayo@illumium.org>"]
 license = "Apache-2.0"
